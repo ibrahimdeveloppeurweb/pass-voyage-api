@@ -1,0 +1,20 @@
+controllers:
+    resource:
+        path: ../src/Controller/
+        namespace: App\Controller
+    type: attribute
+
+api_login_check:
+  path: /api/login
+  methods: [POST]
+  controller: App\Controller\Security\SecurityController::loginCheck
+
+api_forgot_check:
+  path: /api/forgot
+  methods: [POST]
+  controller: App\Controller\Security\SecurityController::forgotCheck
+
+api_logout_check:
+  path: /api/logout
+  methods: [POST]
+  controller: App\Controller\Security\SecurityController::logoutCheck

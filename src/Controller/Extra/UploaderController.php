@@ -1,0 +1,116 @@
+<?php
+
+namespace App\Controller\Extra;
+
+use App\Helpers\JsonHelper;
+use App\Entity\Extra\Folder;
+use App\Exception\ExceptionApi;
+use App\Manager\Extra\UploaderManager;
+use App\Repository\Extra\FileRepository;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+
+class UploaderController extends AbstractController
+{
+    private $em;
+    private $uploadManager;
+    private $fileRepository;
+    public function __construct(
+        EntityManagerInterface $em,
+        UploaderManager $uploadManager,
+        FileRepository $fileRepository
+        )
+    {
+        $this->em = $em;
+        $this->uploadManager = $uploadManager;
+        $this->fileRepository = $fileRepository;
+    }
+
+    /**
+     * @Route("/api/uploader", name="uploader", methods={"POST"},
+     * options={"description"="Uploader des fichiers", "permission"="UPLOADER:UPLOAD"})
+     * @param Request $request
+     * @return Response
+     */
+    public function uploader(Request $request): Response
+    {
+        try {
+            $result = $this->uploadManager->folder($request);
+            // $result = null; 
+            $response = (new JsonHelper(json_decode(json_encode($result)), 'Image ajouté avec succès', 'success', 200, []))->serialize();
+        }
+        catch (ExceptionApi $e) {
+            $response = (new JsonHelper(null, $e->getMessage(), 'bad_request', $e->getCode(), $e->getErrors()))->serialize();
+            return $this->json($response, $e->getCode(), [], ['groups' => ['default', 'file', 'photo', 'folder']]);
+        }
+        return $this->json($response, 200, []);
+    }
+
+    /**
+     * @Route("/api/uploader/create/folder", name="uploader_folder_creation", methods={"POST"},
+     * options={"description"="Créer un dossier d'upload", "permission"="UPLOADER:FOLDER:NEW"})
+     * @param Request $request
+     * @return Response
+     */
+    public function createFolder(Request $request): Response
+    {
+        $folder = new Folder();
+        $this->em->persist($folder);
+        $this->em->flush();
+        return $this->json(['status' => 'success', 'uuid' => (string)$folder->getUuid()], 200);
+    }
+
+    /**
+     * @Route("/api/uploader/folder/delete", name="delete_file_folder", methods={"DELETE", "POST"},
+     * options={"description"="Supprimer un dossier d'upload", "permission"="UPLOADER:FOLDER:DELETE"})
+     * @param Request $request
+     * @return Response
+     */
+    public function deleteFolder(Request $request): Response
+    {
+        try {
+            $data = \json_decode($request->getContent());
+            $user = $this->getUser();
+            $userFolderName = $user ? $user->getUuid() . '_' . str_replace(' ', '', $user->getNom()) : 'default_admin';
+            $this->uploadManager->deleteFolder($data->uuid, $data->path, $userFolderName);
+            $this->em->flush();
+            $response = (new JsonHelper(null, 'Dossier supprimé avec succès', 'success', 200, []))->serialize();
+        }
+        catch (ExceptionApi $e) {
+            $response = (new JsonHelper(null, $e->getMessage(), 'bad_request', $e->getCode(), $e->getErrors()))->serialize();
+            return $this->json($response, $e->getCode(), [], ['groups' => ['default', 'file', 'photo', 'folder']]);
+        }
+        return $this->json($response, 200, [], ['groups' => ['default', 'file', 'photo', 'folder']]);
+    }
+
+    /**
+     * @Route("/api/uploader/file/delete", name="delete_file", methods={"DELETE", "POST"},
+     * options={"description"="Supprimer un fichier uploadé", "permission"="UPLOADER:FILE:DELETE"})
+     * @param Request $request
+     * @return Response
+     */
+    public function deleteFile(Request $request): Response
+    {
+        try {
+            $data = \json_decode($request->getContent());
+            $file = $this->fileRepository->findOneBySrc($data->src);
+            $user = $this->getUser();
+            $userFolderName = $user ? $user->getUuid() . '_' . str_replace(' ', '', $user->getNom()) : 'default_admin';
+            $path = __DIR__ . '/../../public/uploads/' . $userFolderName . '/' . $data->path . '/' . $data->src;
+            $this->uploadManager->deleteFile($path);
+            if ($file) {
+                $this->em->remove($file);
+                $this->em->flush();
+            }
+            $response = (new JsonHelper(null, 'Fichier supprimé avec succès', 'success', 200, []))->serialize();
+        }
+        catch (ExceptionApi $e) {
+            $response = (new JsonHelper(null, $e->getMessage(), 'bad_request', $e->getCode(), $e->getErrors()))->serialize();
+            return $this->json($response, $e->getCode(), [], ['groups' => ['default', 'file', 'photo', 'folder']]);
+        }
+        return $this->json($response, 200, [], ['groups' => ['default', 'file', 'photo', 'folder']]);
+    }
+}

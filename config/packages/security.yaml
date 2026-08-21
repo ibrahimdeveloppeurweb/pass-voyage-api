@@ -1,0 +1,52 @@
+security:
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+        App\Entity\Admin\User:
+            algorithm: auto
+
+    providers:
+        app_user_provider:
+            id: App\Security\UserDBProvider
+
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+
+        api_public:
+            pattern: ^/api/public
+            security: false
+
+        api_login:
+            pattern: ^/api/login
+            stateless: true
+
+        api_forgot:
+            pattern: ^/api/forgot
+            stateless: true
+
+        api_refresh:
+            pattern: ^/api/token/refresh
+            stateless: true
+
+        api:
+            pattern:   ^/api
+            stateless: true
+            provider: app_user_provider
+            jwt: ~
+
+    access_control:
+        - { path: ^/api/login, roles: PUBLIC_ACCESS }
+        - { path: ^/api/forgot, roles: PUBLIC_ACCESS }
+        - { path: ^/api/token/refresh, roles: PUBLIC_ACCESS }
+        - { path: ^/api/public, roles: PUBLIC_ACCESS }
+        - { path: ^/api,       roles: IS_AUTHENTICATED_FULLY }
+
+when@test:
+    security:
+        password_hashers:
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4
+                time_cost: 3
+                memory_cost: 10
