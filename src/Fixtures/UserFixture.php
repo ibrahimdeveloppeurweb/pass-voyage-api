@@ -28,8 +28,7 @@ class UserFixture extends Fixture
         UserPasswordHasherInterface $passwordHasher,
         UserRepository $userRepository,
         PathRepository $pathRepository,
-        )
-    {
+    ) {
         $this->passwordHasher = $passwordHasher;
         $this->userRepository = $userRepository;
         $this->pathRepository = $pathRepository;
@@ -52,13 +51,13 @@ class UserFixture extends Fixture
             ->setDescription('Accès complet à toutes les fonctionnalités de la plateforme Passe Voyage')
             ->setCreatedAt(new \DateTime('now'))
             ->setIsFirst(true)
-            ;
+        ;
 
         // Assignation de toutes les routes ADMIN et des MENUS au rôle
         $apiPaths = RouteHelper::ADMIN_ROUTE($pathsRow);
         $menuPaths = RouteHelper::MENU_ROUTE($pathsRow);
         $paths = array_merge($apiPaths, $menuPaths);
-        
+
         foreach ($paths as $path) {
             $path->addRole($role);
             $manager->persist($path);
@@ -76,7 +75,7 @@ class UserFixture extends Fixture
             ->setType(User::TYPE['ADMIN'])
             ->setIsFirst(true)
             ->setCreatedAt(new \DateTime('now'))
-            ;
+        ;
         $manager->persist($user);
 
         // ── 4. Liaison du User au Rôle ─────────────────────────────────────────

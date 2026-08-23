@@ -294,9 +294,11 @@ class AgentController extends AbstractController
         }
     }
 
-    #[Route('/performances', name: 'agent_performances_private', methods: ['GET', 'POST'])]
-    #[Route('/api/private/agent/performances', name: 'agent_performances_api_private', methods: ['GET', 'POST'])]
-    #[Route('/api/public/agent/performances', name: 'agent_performances_api_public', methods: ['GET', 'POST'])]
+    /**
+     * @Route("/performances", name="agent_performances_private", methods={"GET", "POST"},
+     * options={"description"="Performances d'un agent", "permission"="AGENT:PERFORMANCES"})
+     */
+    #[Route('/performances', name: 'agent_performances_private', methods: ['GET', 'POST'], options: ['description' => 'Performances d\'un agent', 'permission' => 'AGENT:PERFORMANCES'])]
     public function getPerformances(Request $request): JsonResponse
     {
         $date = $request->query->get('date') ?? $request->query->get('filterDate');

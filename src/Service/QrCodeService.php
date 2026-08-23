@@ -8,7 +8,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Endroid\QrCode\Encoding\Encoding;
-use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelHigh;
+use Endroid\QrCode\ErrorCorrectionLevel\ErrorCorrectionLevelLow;
 
 class QrCodeService
 {
@@ -28,7 +28,7 @@ class QrCodeService
             if (class_exists(QrCode::class)) {
                 $qrCode = QrCode::create($content)
                     ->setEncoding(new Encoding('UTF-8'))
-                    ->setErrorCorrectionLevel(new ErrorCorrectionLevelHigh())
+                    ->setErrorCorrectionLevel(new ErrorCorrectionLevelLow())
                     ->setSize(300)
                     ->setMargin(10);
 
@@ -59,30 +59,7 @@ class QrCodeService
      */
     public function generateQrPayload(CreditRequest $creditRequest, string $ticketCode, int $index = 1, ?Ticket $ticket = null): string
     {
-        $passenger = $creditRequest->getPassenger();
-        $passengerId = $passenger ? $passenger->getId() : null;
-        $passengerUuid = $passenger ? $passenger->getUuid() : null;
-        $passengerName = $passenger ? trim(($passenger->getFirstname() ?? '') . ' ' . ($passenger->getLastname() ?? '')) : null;
-
-        $ticketId = $ticket ? $ticket->getId() : null;
-        $ticketUuid = $ticket ? $ticket->getUuid() : null;
-
-        return json_encode([
-            'ticketId' => $ticketId,
-            'ticketUuid' => $ticketUuid,
-            'ticketNumber' => $ticketCode,
-            'creditRequestId' => $creditRequest->getId(),
-            'creditRequestUuid' => $creditRequest->getUuid(),
-            'passengerId' => $passengerId,
-            'passengerUuid' => $passengerUuid,
-            'passengerName' => $passengerName ?: 'Passager',
-            'index' => $index,
-            'company' => $creditRequest->getCompany()?->getName() ?? ($creditRequest->getDepartureCompany() ?? 'UTB'),
-            'departureCity' => $creditRequest->getDepartureCity(),
-            'arrivalCity' => $creditRequest->getArrivalCity(),
-            'travelDate' => $creditRequest->getTravelDate()?->format('Y-m-d'),
-            'hash' => sha1($ticketCode . '_SECRET_SALT_PASSE_VOYAGE_')
-        ]);
+        return trim($ticketCode);
     }
 
     /**

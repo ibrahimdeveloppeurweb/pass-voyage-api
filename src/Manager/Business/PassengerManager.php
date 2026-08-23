@@ -53,7 +53,7 @@ class PassengerManager
     {
         $passenger = $this->passengerRepository->findOneBy(['uuid' => $uuid]);
         if (!$passenger && is_numeric($uuid)) {
-            $passenger = $this->passengerRepository->find((int)$uuid);
+            $passenger = $this->passengerRepository->find((int) $uuid);
         }
         if (!$passenger) {
             throw new \Exception("Passager non trouvé");
@@ -126,17 +126,20 @@ class PassengerManager
         if (isset($data->identityRectoUrl) || isset($data->rectoImage)) {
             $recto = $data->identityRectoUrl ?? $data->rectoImage;
             $savedRecto = $this->saveBase64Image($recto, 'recto');
-            if ($savedRecto) $passenger->setIdentityRectoUrl($savedRecto);
+            if ($savedRecto)
+                $passenger->setIdentityRectoUrl($savedRecto);
         }
         if (isset($data->identityVersoUrl) || isset($data->versoImage)) {
             $verso = $data->identityVersoUrl ?? $data->versoImage;
             $savedVerso = $this->saveBase64Image($verso, 'verso');
-            if ($savedVerso) $passenger->setIdentityVersoUrl($savedVerso);
+            if ($savedVerso)
+                $passenger->setIdentityVersoUrl($savedVerso);
         }
         if (isset($data->selfieUrl) || isset($data->selfieImage)) {
             $selfie = $data->selfieUrl ?? $data->selfieImage;
             $savedSelfie = $this->saveBase64Image($selfie, 'selfie');
-            if ($savedSelfie) $passenger->setSelfieUrl($savedSelfie);
+            if ($savedSelfie)
+                $passenger->setSelfieUrl($savedSelfie);
         }
 
         if (isset($data->fcmToken) || isset($data->fcm_token)) {
@@ -178,9 +181,9 @@ class PassengerManager
                 }
             }
         } else {
-            $hasDocuments = !empty($data->identityRectoUrl) || !empty($data->rectoImage) 
-                         || !empty($data->identityVersoUrl) || !empty($data->versoImage)
-                         || !empty($data->selfieUrl) || !empty($data->selfieImage);
+            $hasDocuments = !empty($data->identityRectoUrl) || !empty($data->rectoImage)
+                || !empty($data->identityVersoUrl) || !empty($data->versoImage)
+                || !empty($data->selfieUrl) || !empty($data->selfieImage);
 
             if ($hasDocuments && $passenger->getIdentityStatus() !== 'VERIFIED') {
                 $passenger->setIdentityStatus('PENDING');
@@ -224,7 +227,7 @@ class PassengerManager
             try {
                 $this->notificationService->createNotification(
                     $user,
-                    'Bienvenue sur Pass Voyage 🎉',
+                    'Bienvenue sur Pass Voyage',
                     'Votre compte passager a été créé avec succès. Bienvenue parmi nous !',
                     'WELCOME'
                 );
@@ -318,11 +321,12 @@ class PassengerManager
         try {
             $this->notificationService->createNotificationForPassenger(
                 $passenger,
-                'Documents transmis 📄',
+                'Documents transmis',
                 'Vos documents d\'identification ont été transmis avec succès et sont en cours d\'examen par l\'administrateur.',
                 'KYC_SUBMITTED'
             );
-        } catch (\Exception $e) {}
+        } catch (\Exception $e) {
+        }
 
         $this->em->persist($passenger);
         $this->em->flush();
@@ -349,21 +353,24 @@ class PassengerManager
                     'Félicitations ! Votre identité et vos pièces ont été vérifiées et approuvées par l\'administrateur.',
                     'KYC_VERIFIED'
                 );
-            } catch (\Exception $e) {}
+            } catch (\Exception $e) {
+            }
         } elseif ($statusUpper === 'REJECTED' || $statusUpper === 'REFUSED') {
             $passenger->setIdentityStatus('REJECTED');
             $passenger->setIsIdentified(false);
 
             try {
                 $msg = 'Votre dossier d\'identification a été rejeté par l\'administrateur.';
-                if ($reason) $msg .= ' Raison : ' . $reason;
+                if ($reason)
+                    $msg .= ' Raison : ' . $reason;
                 $this->notificationService->createNotificationForPassenger(
                     $passenger,
                     'Identification refusée ❌',
                     $msg,
                     'KYC_REJECTED'
                 );
-            } catch (\Exception $e) {}
+            } catch (\Exception $e) {
+            }
         } else {
             $passenger->setIdentityStatus($statusUpper);
         }
@@ -398,7 +405,7 @@ class PassengerManager
     public function delete(Passenger $passenger): Passenger
     {
         $passenger->setDeletedAt(new \DateTime());
-        
+
         if ($user = $this->userRepository->findOneBy(['passenger' => $passenger])) {
             $this->em->remove($user);
         }
@@ -471,12 +478,21 @@ class PassengerManager
         }
 
         $monthsFr = [
-            1 => 'Janv', 2 => 'Fév', 3 => 'Mars', 4 => 'Avr',
-            5 => 'Mai', 6 => 'Juin', 7 => 'Juil', 8 => 'Août',
-            9 => 'Sept', 10 => 'Oct', 11 => 'Nov', 12 => 'Déc'
+            1 => 'Janv',
+            2 => 'Fév',
+            3 => 'Mars',
+            4 => 'Avr',
+            5 => 'Mai',
+            6 => 'Juin',
+            7 => 'Juil',
+            8 => 'Août',
+            9 => 'Sept',
+            10 => 'Oct',
+            11 => 'Nov',
+            12 => 'Déc'
         ];
 
-        $monthNum = (int)$date->format('n');
+        $monthNum = (int) $date->format('n');
         $monthStr = $monthsFr[$monthNum] ?? $date->format('M');
 
         return $date->format('d') . ' ' . $monthStr . ' • ' . $date->format('H:i');
@@ -503,16 +519,16 @@ class PassengerManager
         $allUserCredits = $creditRepo->findBy(['passenger' => $passenger]);
         $totalDebtFromValidatedCredits = 0;
         foreach ($allUserCredits as $cr) {
-            $st = strtoupper(trim((string)$cr->getStatus()));
+            $st = strtoupper(trim((string) $cr->getStatus()));
             if (in_array($st, ['APPROVED', 'VALIDE'])) {
                 $toRepay = method_exists($cr, 'getAmountToRepay') ? $cr->getAmountToRepay() : ($cr->getAmountRequested() ?: $cr->getTotalAmount());
-                $rem = max(0, $toRepay - (int)$cr->getRepaidAmount());
+                $rem = max(0, $toRepay - (int) $cr->getRepaidAmount());
                 $totalDebtFromValidatedCredits += $rem;
             }
         }
 
         $totalDebt = $totalDebtFromValidatedCredits;
-        $maxLimit = (int)($passenger->getMaxCreditLimit() ?? 200000);
+        $maxLimit = (int) ($passenger->getMaxCreditLimit() ?? 200000);
         $availableCreditLimit = max(0, $maxLimit - $totalDebt);
 
         $passenger->setTotalDebt($totalDebt);
@@ -525,7 +541,7 @@ class PassengerManager
         $recentActivities = [];
         $credits = $creditRepo->findBy(['passenger' => $passenger], ['createdAt' => 'DESC'], 10);
         foreach ($credits as $cr) {
-            $statusStr = match($cr->getStatus()) {
+            $statusStr = match ($cr->getStatus()) {
                 'APPROVED' => 'Approuvée',
                 'PENDING_VALIDATION', 'PENDING' => 'En attente de validation',
                 'REJECTED' => 'Rejetée',
@@ -534,7 +550,7 @@ class PassengerManager
             $title = 'Demande de Crédit';
             if ($cr->getStatus() === 'APPROVED') {
                 $title = 'Octroi Crédit Voyage';
-            } elseif (in_array(strtoupper((string)$cr->getStatus()), ['PENDING_VALIDATION', 'PENDING', 'EN_ATTENTE', 'IN_PROGRESS', 'SUBMITTED'])) {
+            } elseif (in_array(strtoupper((string) $cr->getStatus()), ['PENDING_VALIDATION', 'PENDING', 'EN_ATTENTE', 'IN_PROGRESS', 'SUBMITTED'])) {
                 $title = 'Demande de crédit soumise';
             }
 
@@ -551,7 +567,7 @@ class PassengerManager
 
             foreach ($cr->getTickets() as $ticket) {
                 if ($ticket->getIsUsed() || $ticket->getStatus() === 'SCANNED') {
-                    $comp = $ticket->getDepartureCompany() ? $ticket->getDepartureCompany() : 'Car';
+                    $comp = $ticket->getCompany() ? $ticket->getCompany()->getName() : 'Car';
                     $usedDate = $this->formatDateFr($ticket->getUsedAt() ?? $ticket->getCreatedAt());
                     $recentActivities[] = [
                         'id' => 'tk_' . $ticket->getId(),
@@ -560,7 +576,7 @@ class PassengerManager
                         'message' => 'Ticket #' . $ticket->getTicketNumber() . ' (' . $comp . ')',
                         'iconType' => 'BUS',
                         'isPositive' => false,
-                        'amount' => '- ' . number_format($ticket->getPrice(), 0, ',', '.') . ' XOF',
+                        'amount' => '- ' . number_format($ticket->getUnitPrice(), 0, ',', '.') . ' XOF',
                         'timestamp' => $ticket->getUsedAt() ? $ticket->getUsedAt()->getTimestamp() : 0,
                     ];
                 }
@@ -570,7 +586,7 @@ class PassengerManager
         if ($user && $this->notificationRepository) {
             $notifications = $this->notificationRepository->findByUserSorted($user);
             foreach ($notifications as $notif) {
-                $type = strtoupper((string)$notif->getType());
+                $type = strtoupper((string) $notif->getType());
                 if ($type === 'CREDIT_SUBMITTED') {
                     continue;
                 }
@@ -602,8 +618,8 @@ class PassengerManager
         $paymentRepo = $this->em->getRepository(\App\Entity\Business\Payment::class);
         $payments = $paymentRepo->findBy(['passenger' => $passenger], ['paymentDate' => 'DESC'], 10);
         foreach ($payments as $pm) {
-            $txId = (string)$pm->getTransactionId();
-            $pmMethod = (string)$pm->getPaymentMethod();
+            $txId = (string) $pm->getTransactionId();
+            $pmMethod = (string) $pm->getPaymentMethod();
 
             $isFee = str_starts_with(strtoupper($txId), 'TX-FEE-')
                 || str_contains(strtoupper($txId), 'FEE')
@@ -611,7 +627,7 @@ class PassengerManager
                 || str_contains(strtoupper($pmMethod), 'FRAIS');
 
             $title = $isFee ? 'Paiement Frais de Service' : 'Remboursement Crédit';
-            $msg = $isFee 
+            $msg = $isFee
                 ? ('Paiement des frais de service via ' . ($pm->getPaymentMethod() ?? 'Mobile Money'))
                 : ('Règlement via ' . ($pm->getPaymentMethod() ?? 'Mobile Money'));
 
@@ -627,7 +643,7 @@ class PassengerManager
             ];
         }
 
-        usort($recentActivities, function($a, $b) {
+        usort($recentActivities, function ($a, $b) {
             return $b['timestamp'] <=> $a['timestamp'];
         });
 
@@ -668,7 +684,7 @@ class PassengerManager
             try {
                 $this->notificationService->createNotification(
                     $user,
-                    'Bienvenue sur Pass Voyage 🎉',
+                    'Bienvenue sur Pass Voyage ',
                     'Votre compte passager a été configuré avec succès. Retrouvez ici toutes vos activités.',
                     'WELCOME'
                 );
@@ -676,7 +692,7 @@ class PassengerManager
                 if ($passenger->getIdentityStatus() === 'PENDING') {
                     $this->notificationService->createNotification(
                         $user,
-                        'Pièces transmises 📋',
+                        'Pièces transmises ',
                         'Vos documents d\'identification ont été transmis avec succès et sont en cours d\'examen par l\'administrateur.',
                         'KYC_SUBMITTED'
                     );
@@ -834,7 +850,7 @@ class PassengerManager
             $allCompanies = $companyRepo->findAll();
         }
 
-        $activeCompanies = array_filter($allCompanies, function(\App\Entity\Business\Company $c) {
+        $activeCompanies = array_filter($allCompanies, function (\App\Entity\Business\Company $c) {
             return $c->getIsActive() !== false && $c->getStatus() !== 'Inactif';
         });
 
@@ -842,7 +858,7 @@ class PassengerManager
             $activeCompanies = $allCompanies;
         }
 
-        $companiesData = array_values(array_map(function(\App\Entity\Business\Company $c) {
+        $companiesData = array_values(array_map(function (\App\Entity\Business\Company $c) {
             return [
                 'id' => $c->getId(),
                 'uuid' => $c->getUuid(),
@@ -853,10 +869,12 @@ class PassengerManager
             ];
         }, $activeCompanies));
 
-        $normalizeCity = function(?string $name): string {
-            if (!$name) return '';
+        $normalizeCity = function (?string $name): string {
+            if (!$name)
+                return '';
             $clean = trim($name);
-            if ($clean === '' || $clean === '-') return '';
+            if ($clean === '' || $clean === '-')
+                return '';
             $cleanLower = mb_strtolower($clean, 'UTF-8');
             $cleanTitle = mb_convert_case($cleanLower, MB_CASE_TITLE, 'UTF-8');
             $map = [
@@ -876,7 +894,7 @@ class PassengerManager
             $activeRoutes = $routeRepo->findAll();
         }
 
-        $routesData = array_map(function(\App\Entity\Business\Route $r) use ($normalizeCity) {
+        $routesData = array_map(function (\App\Entity\Business\Route $r) use ($normalizeCity) {
             $depName = $normalizeCity($r->getDepartureCity() ? $r->getDepartureCity()->getName() : ($r->getDepartureStation() ? $r->getDepartureStation()->getName() : ''));
             $arrName = $normalizeCity($r->getArrivalCity() ? $r->getArrivalCity()->getName() : ($r->getArrivalStation() ? $r->getArrivalStation()->getName() : ''));
 
@@ -911,7 +929,7 @@ class PassengerManager
             }
         }
 
-        $defaultCities = ['Abidjan', 'Bouaké', 'Yamoussoukro', 'Korhogo', 'San-Pédro', 'Daloa', 'Man', 'Odienné'];
+        $defaultCities = [];
         foreach ($defaultCities as $dCity) {
             $cityNamesMap[$dCity] = true;
         }
@@ -926,7 +944,7 @@ class PassengerManager
             $activeTariffs = $tariffRepo->findAll();
         }
 
-        $tariffsData = array_map(function(\App\Entity\Business\Tariff $t) use ($normalizeCity) {
+        $tariffsData = array_map(function (\App\Entity\Business\Tariff $t) use ($normalizeCity) {
             $route = $t->getRoute();
             $depName = $normalizeCity($route ? ($route->getDepartureCity() ? $route->getDepartureCity()->getName() : ($route->getDepartureStation() ? $route->getDepartureStation()->getName() : '')) : '');
             $arrName = $normalizeCity($route ? ($route->getArrivalCity() ? $route->getArrivalCity()->getName() : ($route->getArrivalStation() ? $route->getArrivalStation()->getName() : '')) : '');
@@ -982,10 +1000,10 @@ class PassengerManager
         $pendingCredits = [];
         $totalDebtFromValidatedCredits = 0;
         foreach ($userCredits as $cr) {
-            $st = strtoupper(trim((string)$cr->getStatus()));
+            $st = strtoupper(trim((string) $cr->getStatus()));
             if (in_array($st, ['APPROVED', 'VALIDE'])) {
                 $toRepay = method_exists($cr, 'getAmountToRepay') ? $cr->getAmountToRepay() : ($cr->getAmountRequested() ?: $cr->getTotalAmount());
-                $rem = max(0, $toRepay - (int)$cr->getRepaidAmount());
+                $rem = max(0, $toRepay - (int) $cr->getRepaidAmount());
                 $totalDebtFromValidatedCredits += $rem;
                 if ($cr->getRepaymentStatus() !== 'FULLY_REIMBURSED' && $rem > 0) {
                     $pendingCredits[] = $cr;
@@ -1033,7 +1051,7 @@ class PassengerManager
             }
 
             $amountToRepay = method_exists($cr, 'getAmountToRepay') ? $cr->getAmountToRepay() : ($cr->getAmountRequested() ?: $cr->getTotalAmount());
-            $alreadyRepaid = (int)$cr->getRepaidAmount();
+            $alreadyRepaid = (int) $cr->getRepaidAmount();
             $needed = max(0, $amountToRepay - $alreadyRepaid);
 
             if ($needed <= 0) {
@@ -1067,7 +1085,7 @@ class PassengerManager
         $allPayments = $paymentRepo->findBy(['passenger' => $passenger]);
         $newTotalReimbursed = 0;
         foreach ($allPayments as $p) {
-            $newTotalReimbursed += (int)$p->getAmount();
+            $newTotalReimbursed += (int) $p->getAmount();
         }
         $passenger->setTotalReimbursed($newTotalReimbursed);
 
@@ -1075,16 +1093,16 @@ class PassengerManager
         $totalDebtFromValidatedCredits = 0;
         $allUserCredits = $creditRepo->findBy(['passenger' => $passenger]);
         foreach ($allUserCredits as $cr) {
-            $st = strtoupper(trim((string)$cr->getStatus()));
+            $st = strtoupper(trim((string) $cr->getStatus()));
             if (in_array($st, ['APPROVED', 'VALIDE'])) {
                 $toRepay = method_exists($cr, 'getAmountToRepay') ? $cr->getAmountToRepay() : ($cr->getAmountRequested() ?: $cr->getTotalAmount());
-                $rem = max(0, $toRepay - (int)$cr->getRepaidAmount());
+                $rem = max(0, $toRepay - (int) $cr->getRepaidAmount());
                 $totalDebtFromValidatedCredits += $rem;
             }
         }
 
         $newTotalDebt = $totalDebtFromValidatedCredits;
-        $maxLimit = (int)($passenger->getMaxCreditLimit() ?? 200000);
+        $maxLimit = (int) ($passenger->getMaxCreditLimit() ?? 200000);
         $newAvailableCredit = max(0, $maxLimit - $newTotalDebt);
 
         $passenger->setTotalDebt($newTotalDebt);
@@ -1098,15 +1116,17 @@ class PassengerManager
             try {
                 $this->notificationService->createNotification(
                     $user,
-                    'Remboursement de crédit effectué 🎉',
-                    sprintf('Votre paiement de %s FCFA par %s a bien été pris en compte. Solde crédit restant : %s FCFA.',
+                    'Remboursement de crédit effectué ',
+                    sprintf(
+                        'Votre paiement de %s FCFA par %s a bien été pris en compte. Solde crédit restant : %s FCFA.',
                         number_format($amount, 0, ',', '.'),
                         $paymentMethod,
                         number_format($newTotalDebt, 0, ',', '.')
                     ),
                     'CREDIT_REIMBURSEMENT'
                 );
-            } catch (\Throwable $e) {}
+            } catch (\Throwable $e) {
+            }
         }
 
         return [
@@ -1153,13 +1173,13 @@ class PassengerManager
         $calculatedTotalReimbursed = 0;
 
         foreach ($payments as $pm) {
-            $txId = (string)$pm->getTransactionId();
+            $txId = (string) $pm->getTransactionId();
             // Les frais de service (TX-FEE-) ne doivent pas etre comptabilises comme remboursement du credit
             if (str_starts_with($txId, 'TX-FEE-') || str_contains($txId, 'FEE')) {
                 continue;
             }
 
-            $amt = (int)$pm->getAmount();
+            $amt = (int) $pm->getAmount();
             $calculatedTotalReimbursed += $amt;
             $reimbursementsList[] = [
                 'id' => $pm->getId(),
@@ -1177,10 +1197,10 @@ class PassengerManager
         $creditRepo = $this->em->getRepository(\App\Entity\Business\Credit::class);
         $allUserCredits = $creditRepo->findBy(['passenger' => $passenger]);
         foreach ($allUserCredits as $cr) {
-            $st = strtoupper(trim((string)$cr->getStatus()));
+            $st = strtoupper(trim((string) $cr->getStatus()));
             if (in_array($st, ['APPROVED', 'VALIDE'])) {
                 $toRepay = method_exists($cr, 'getAmountToRepay') ? $cr->getAmountToRepay() : ($cr->getAmountRequested() ?: $cr->getTotalAmount());
-                $rem = max(0, $toRepay - (int)$cr->getRepaidAmount());
+                $rem = max(0, $toRepay - (int) $cr->getRepaidAmount());
                 $totalDebtFromValidatedCredits += $rem;
             }
         }
@@ -1227,10 +1247,10 @@ class PassengerManager
 
         foreach ($contactsList as $c) {
             if (is_object($c)) {
-                $c = (array)$c;
+                $c = (array) $c;
             }
-            $name = trim((string)($c['name'] ?? $c['displayName'] ?? $c['contactName'] ?? ''));
-            $num = trim((string)($c['phone'] ?? $c['phoneNumber'] ?? $c['number'] ?? ''));
+            $name = trim((string) ($c['name'] ?? $c['displayName'] ?? $c['contactName'] ?? ''));
+            $num = trim((string) ($c['phone'] ?? $c['phoneNumber'] ?? $c['number'] ?? ''));
 
             if (empty($num)) {
                 continue;
@@ -1267,7 +1287,7 @@ class PassengerManager
 
     public function toggleBlacklist(Passenger $passenger, ?bool $status = null, ?string $reason = null): Passenger
     {
-        $newStatus = ($status !== null) ? (bool)$status : !$passenger->getIsBlacklisted();
+        $newStatus = ($status !== null) ? (bool) $status : !$passenger->getIsBlacklisted();
         $passenger->setIsBlacklisted($newStatus);
         $passenger->setUpdatedAt(new \DateTime());
         $this->em->persist($passenger);
@@ -1283,21 +1303,21 @@ class PassengerManager
         }
 
         $passenger = is_numeric($passengerId)
-            ? $this->passengerRepository->find((int)$passengerId)
+            ? $this->passengerRepository->find((int) $passengerId)
             : $this->passengerRepository->findOneBy(['uuid' => $passengerId]);
 
         if (!$passenger) {
             throw new \InvalidArgumentException('Passager débiteur introuvable');
         }
 
-        $debt = number_format((int)$passenger->getTotalDebt(), 0, ',', '.');
+        $debt = number_format((int) $passenger->getTotalDebt(), 0, ',', '.');
         $name = trim(($passenger->getFirstname() ?? '') . ' ' . ($passenger->getLastname() ?? ''));
         if (!$name) {
             $name = $passenger->getPhoneNumber() ?? 'Passager';
         }
 
         $setting = $this->em->getRepository(\App\Entity\Extra\GeneralSetting::class)->findOneBy([]);
-        $delaiDays = $setting ? (int)$setting->getDelaiOptionStandard() : 14;
+        $delaiDays = $setting ? (int) $setting->getDelaiOptionStandard() : 14;
         $days = $passenger->getDaysOverdue($delaiDays);
 
         $title = 'Rappel de paiement de crédit voyage';
@@ -1319,17 +1339,17 @@ class PassengerManager
     public function sendAllReminders(): array
     {
         $setting = $this->em->getRepository(\App\Entity\Extra\GeneralSetting::class)->findOneBy([]);
-        $delaiDays = $setting ? (int)$setting->getDelaiOptionStandard() : 14;
+        $delaiDays = $setting ? (int) $setting->getDelaiOptionStandard() : 14;
 
         $debtors = $this->passengerRepository->findByFilters(['financialStatus' => 'IMPAYE', 'onlyOverdue' => 1], $delaiDays);
         $count = 0;
 
         foreach ($debtors as $passenger) {
-            if ((int)$passenger->getTotalDebt() <= 0 || $passenger->getDaysOverdue($delaiDays) <= 0) {
+            if ((int) $passenger->getTotalDebt() <= 0 || $passenger->getDaysOverdue($delaiDays) <= 0) {
                 continue;
             }
 
-            $debt = number_format((int)$passenger->getTotalDebt(), 0, ',', '.');
+            $debt = number_format((int) $passenger->getTotalDebt(), 0, ',', '.');
             $name = trim(($passenger->getFirstname() ?? '') . ' ' . ($passenger->getLastname() ?? ''));
             if (!$name) {
                 $name = $passenger->getPhoneNumber() ?? 'Passager';
@@ -1365,7 +1385,7 @@ class PassengerManager
             $all = $this->em->getRepository(\App\Entity\Extra\GeneralSetting::class)->findAll();
             $setting = count($all) > 0 ? $all[0] : null;
         }
-        $delaiDays = $setting ? (int)$setting->getDelaiOptionStandard() : 14;
+        $delaiDays = $setting ? (int) $setting->getDelaiOptionStandard() : 14;
 
         if (!empty($queryParams)) {
             $passengers = $this->passengerRepository->findByFilters($queryParams, $delaiDays);

@@ -203,7 +203,8 @@ class AgentManager
         if (!$company) {
             try {
                 $company = $this->companyRepository->findOneBy(['uuid' => $companyUuid]);
-            } catch (\Throwable $e) {}
+            } catch (\Throwable $e) {
+            }
         }
         if (!$company) {
             $company = $this->companyRepository->findOneBy(['name' => $companyUuid]);
@@ -225,7 +226,8 @@ class AgentManager
             if (!$station) {
                 try {
                     $station = $stationRepo->findOneBy(['uuid' => $stationUuid]);
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                }
             }
             if (!$station) {
                 $station = $stationRepo->findOneBy(['name' => $stationUuid]);
@@ -265,10 +267,11 @@ class AgentManager
         try {
             $stationName = $station->getName();
             $companyName = $company->getName();
-            $title = "Affectation mise à jour 🚉";
+            $title = "Affectation mise à jour ";
             $message = "Vous avez été affecté(e) à la gare $stationName de $companyName. Votre compte a été validé et activé.";
             $this->notificationService->createNotificationForAgent($agent, $title, $message, 'AGENT_ASSIGNMENT');
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+        }
 
         return $agent;
     }
@@ -299,16 +302,17 @@ class AgentManager
 
         try {
             if ($newActive) {
-                $title = "Compte Réactivé & Validé 🟢";
+                $title = "Compte Réactivé & Validé ";
                 $message = "Votre compte agent a été validé et activé par l'administration. Vous pouvez désormais scanner les billets.";
                 $type = 'ACCOUNT_ACTIVATION';
             } else {
-                $title = "Compte Suspendu ⚠️";
+                $title = "Compte Suspendu ";
                 $message = "Votre compte agent a été temporairement suspendu par l'administration.";
                 $type = 'ACCOUNT_SUSPENSION';
             }
             $this->notificationService->createNotificationForAgent($agent, $title, $message, $type);
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+        }
 
         return $agent;
     }
@@ -672,16 +676,26 @@ class AgentManager
 
         $recentActivities = [];
         $monthsFr = [
-            'Jan' => 'Jan', 'Feb' => 'Fév', 'Mar' => 'Mar', 'Apr' => 'Avr',
-            'May' => 'Mai', 'Jun' => 'Juin', 'Jul' => 'Juil', 'Aug' => 'Août',
-            'Sep' => 'Sept', 'Oct' => 'Oct', 'Nov' => 'Nov', 'Dec' => 'Déc'
+            'Jan' => 'Jan',
+            'Feb' => 'Fév',
+            'Mar' => 'Mar',
+            'Apr' => 'Avr',
+            'May' => 'Mai',
+            'Jun' => 'Juin',
+            'Jul' => 'Juil',
+            'Aug' => 'Août',
+            'Sep' => 'Sept',
+            'Oct' => 'Oct',
+            'Nov' => 'Nov',
+            'Dec' => 'Déc'
         ];
 
         foreach ($recentTickets as $ticket) {
             $credit = $ticket->getCreditRequest();
             $passenger = $credit ? $credit->getPassenger() : null;
             $pName = $passenger ? trim(($passenger->getFirstname() ?? '') . ' ' . ($passenger->getLastname() ?? '')) : 'Passager';
-            if (empty($pName)) $pName = 'Passager';
+            if (empty($pName))
+                $pName = 'Passager';
 
             $departure = $credit ? $credit->getDepartureCity() : 'Abidjan';
             $arrival = $credit ? $credit->getArrivalCity() : 'Yamoussoukro';
@@ -711,7 +725,8 @@ class AgentManager
             if ($user && $this->notificationRepository) {
                 $notifs = $this->notificationRepository->findByUserSorted($user);
                 foreach ($notifs as $n) {
-                    if (count($recentActivities) >= 5) break;
+                    if (count($recentActivities) >= 5)
+                        break;
                     if ($n->getType() !== 'TICKET_SCAN') {
                         $nDate = $n->getCreatedAt() ?? new \DateTime();
                         $rawDate = $nDate->format('d M');
@@ -862,9 +877,11 @@ class AgentManager
         $ticketCompany = $ticket->getCompany() ?? ($ticket->getCreditRequest() ? $ticket->getCreditRequest()->getCompany() : null);
         $agentCompany = $agent ? $agent->getCompany() : null;
 
-        if ($agentCompany && $ticketCompany &&
+        if (
+            $agentCompany && $ticketCompany &&
             $agentCompany->getId() !== $ticketCompany->getId() &&
-            strcasecmp(trim($agentCompany->getName()), trim($ticketCompany->getName())) !== 0) {
+            strcasecmp(trim($agentCompany->getName()), trim($ticketCompany->getName())) !== 0
+        ) {
             $tCompName = $ticketCompany->getName();
             $aCompName = $agentCompany->getName();
             return [
@@ -883,13 +900,14 @@ class AgentManager
         $credit = $ticket->getCreditRequest();
         $passenger = $credit ? $credit->getPassenger() : null;
         $passengerName = $passenger ? trim(($passenger->getFirstname() ?? '') . ' ' . ($passenger->getLastname() ?? '')) : ($jsonPayload['passengerName'] ?? 'Passager Régulier');
-        if (empty($passengerName)) $passengerName = 'Passager Régulier';
+        if (empty($passengerName))
+            $passengerName = 'Passager Régulier';
 
         $passengerPhoto = null;
         if ($passenger) {
             $userRepo = $this->em->getRepository(User::class);
             $pUser = $userRepo->findOneBy(['passenger' => $passenger]);
-            
+
             $photo = $passenger->getSelfieUrl() ?? $passenger->getIdentityRectoUrl();
             if (!$photo && $pUser && $pUser->getAvatar()) {
                 $photo = $pUser->getAvatar();
@@ -930,10 +948,18 @@ class AgentManager
         $arrivalCity = $credit ? $credit->getArrivalCity() : ($jsonPayload['arrivalCity'] ?? 'Yamoussoukro');
 
         $monthsFr = [
-            'January' => 'Janvier', 'February' => 'Février', 'March' => 'Mars',
-            'April' => 'Avril', 'May' => 'Mai', 'June' => 'Juin',
-            'July' => 'Juillet', 'August' => 'Août', 'September' => 'Septembre',
-            'October' => 'Octobre', 'November' => 'Novembre', 'December' => 'Décembre'
+            'January' => 'Janvier',
+            'February' => 'Février',
+            'March' => 'Mars',
+            'April' => 'Avril',
+            'May' => 'Mai',
+            'June' => 'Juin',
+            'July' => 'Juillet',
+            'August' => 'Août',
+            'September' => 'Septembre',
+            'October' => 'Octobre',
+            'November' => 'Novembre',
+            'December' => 'Décembre'
         ];
         $rawDateStr = $credit && $credit->getTravelDate() ? $credit->getTravelDate()->format('d F Y') : ($jsonPayload['travelDate'] ?? (new \DateTime())->format('d F Y'));
         $travelDate = strtr($rawDateStr, $monthsFr);
@@ -979,7 +1005,8 @@ class AgentManager
         $ticket = $ticketCode ? $ticketRepo->findOneBy(['ticketNumber' => $ticketCode]) : null;
         if (!$ticket && $ticketCode && !str_starts_with($ticketCode, 'TCK-')) {
             $ticket = $ticketRepo->findOneBy(['ticketNumber' => 'TCK-' . $ticketCode]);
-        }        if ($ticket) {
+        }
+        if ($ticket) {
             if ($ticket->getStatus() === 'REFUSED') {
                 $dateFormated = $ticket->getValidatedAt() ? $ticket->getValidatedAt()->format('d/m/Y à H:i') : 'récemment';
                 $reason = $ticket->getRefusalComment() ? " (Motif : {$ticket->getRefusalComment()})" : '';
@@ -992,9 +1019,11 @@ class AgentManager
             $ticketCompany = $ticket->getCompany() ?? ($ticket->getCreditRequest() ? $ticket->getCreditRequest()->getCompany() : null);
             $agentCompany = $agent ? $agent->getCompany() : null;
 
-            if ($agentCompany && $ticketCompany &&
+            if (
+                $agentCompany && $ticketCompany &&
                 $agentCompany->getId() !== $ticketCompany->getId() &&
-                strcasecmp(trim($agentCompany->getName()), trim($ticketCompany->getName())) !== 0) {
+                strcasecmp(trim($agentCompany->getName()), trim($ticketCompany->getName())) !== 0
+            ) {
                 $tCompName = $ticketCompany->getName();
                 $aCompName = $agentCompany->getName();
                 return [
@@ -1008,18 +1037,20 @@ class AgentManager
             $refusalComment = $data->refusalComment ?? $data->comment ?? $data->reason ?? null;
 
             if ($action === 'REFUSED') {
-                if (empty($refusalComment) || empty(trim((string)$refusalComment))) {
+                if (empty($refusalComment) || empty(trim((string) $refusalComment))) {
                     return [
                         'status' => 'INVALID_DATA',
                         'message' => 'L\'enregistrement du refus nécessite un motif ou commentaire obligatoire.'
                     ];
                 }
                 $ticket->setStatus('REFUSED');
-                $ticket->setRefusalComment(trim((string)$refusalComment));
+                $ticket->setRefusalComment(trim((string) $refusalComment));
                 $ticket->setIsUsed(true);
                 $ticket->setValidatedAt($now);
-                if ($agent) $ticket->setValidatedByAgent($agent);
-                if ($station) $ticket->setValidatedAtStation($station);
+                if ($agent)
+                    $ticket->setValidatedByAgent($agent);
+                if ($station)
+                    $ticket->setValidatedAtStation($station);
             } else {
                 if (empty($departureTime) || empty($physicalTicketNumber)) {
                     return [
@@ -1032,20 +1063,25 @@ class AgentManager
                 $ticket->setIsUsed(true);
                 $ticket->setUsedAt($now);
                 $ticket->setValidatedAt($now);
-                if ($agent) $ticket->setValidatedByAgent($agent);
-                if ($station) $ticket->setValidatedAtStation($station);
+                if ($agent)
+                    $ticket->setValidatedByAgent($agent);
+                if ($station)
+                    $ticket->setValidatedAtStation($station);
                 $ticket->setStatus('SCANNED');
             }
 
             $this->em->persist($ticket);
             $this->em->flush();
 
-            $formattedValDate = $ticket->getValidatedAt() ? $ticket->getValidatedAt()->format('d/m/Y H:i:s') : $now->format('d/m/Y H:i:s');
+            $tz = new \DateTimeZone('Africa/Abidjan');
+            $vDate = $ticket->getValidatedAt() ? clone $ticket->getValidatedAt() : clone $now;
+            $vDate->setTimezone($tz);
+            $formattedValDate = $vDate->format('d/m/Y H:i:s');
             $stationName = $station ? $station->getName() : 'Gare Principale';
 
             if ($agent) {
                 try {
-                    $title = ($action === 'REFUSED') ? 'Billet Refusé 🚫' : 'Scan de Billet 🎫';
+                    $title = ($action === 'REFUSED') ? 'Billet Refusé ' : 'Scan de Billet';
                     $msg = ($action === 'REFUSED')
                         ? "Le billet {$ticket->getTicketNumber()} a été refusé à l'embarquement le {$formattedValDate}. Motif : {$ticket->getRefusalComment()}."
                         : "Le billet {$ticket->getTicketNumber()} a été scanné le {$formattedValDate} (Départ: {$departureTime}, Billet physique: {$physicalTicketNumber}).";
@@ -1056,13 +1092,14 @@ class AgentManager
                         $msg,
                         'TICKET_SCAN'
                     );
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                }
             }
 
             $passenger = $ticket->getCreditRequest()?->getPassenger();
             if ($passenger) {
                 try {
-                    $pTitle = ($action === 'REFUSED') ? 'Billet Refusé 🚫' : 'Billet Scanné 🎫';
+                    $pTitle = ($action === 'REFUSED') ? 'Billet Refusé ' : 'Billet Scanné ';
                     $companyName = $ticket->getCompany()?->getName() ?? 'Compagnie';
                     $pMsg = ($action === 'REFUSED')
                         ? "Votre billet {$ticket->getTicketNumber()} ($companyName) a été refusé le {$formattedValDate}. Motif : {$ticket->getRefusalComment()}."
@@ -1074,7 +1111,8 @@ class AgentManager
                         $pMsg,
                         'TICKET_SCAN'
                     );
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                }
             }
 
             return [
@@ -1112,10 +1150,14 @@ class AgentManager
             $notifs = $this->notificationRepository->findByUserSorted($user);
             foreach ($notifs as $n) {
                 if ($n->getType() === 'TICKET_SCAN') {
+                    $createdAt = $n->getCreatedAt() ? clone $n->getCreatedAt() : null;
+                    if ($createdAt) {
+                        $createdAt->setTimezone(new \DateTimeZone('Africa/Abidjan'));
+                    }
                     $history[] = [
                         'code' => $n->getTitle(),
                         'message' => $n->getMessage(),
-                        'date' => $n->getCreatedAt() ? $n->getCreatedAt()->format('d/m/Y H:i') : '',
+                        'date' => $createdAt ? $createdAt->format('d/m/Y H:i') : '',
                         'isValid' => true,
                     ];
                 }
@@ -1184,7 +1226,8 @@ class AgentManager
 
     public function findByPhone(?string $phone): ?Agent
     {
-        if (!$phone || trim($phone) === '') return null;
+        if (!$phone || trim($phone) === '')
+            return null;
 
         $phoneTrimmed = trim($phone);
 
@@ -1205,22 +1248,26 @@ class AgentManager
 
         // a. Recherche exacte telle que fournie
         $agent = $this->agentRepository->findOneBy(['phoneNumber' => $phoneTrimmed]);
-        if ($agent) return $agent;
+        if ($agent)
+            return $agent;
 
         // b. Recherche avec l'indicatif international (+225...)
         $fullPhone = '+' . $phoneClean;
         $agent = $this->agentRepository->findOneBy(['phoneNumber' => $fullPhone]);
-        if ($agent) return $agent;
+        if ($agent)
+            return $agent;
 
         // c. Recherche avec le numéro nettoyé sans le '+'
         $agent = $this->agentRepository->findOneBy(['phoneNumber' => $phoneClean]);
-        if ($agent) return $agent;
+        if ($agent)
+            return $agent;
 
         // d. Si le numéro est au format local (10 chiffres ex: 0700000002), formater en +225...
         if (strlen($phoneClean) === 10 && !str_starts_with($phoneClean, '225')) {
             $formattedPhone = '+225' . $phoneClean;
             $agent = $this->agentRepository->findOneBy(['phoneNumber' => $formattedPhone]);
-            if ($agent) return $agent;
+            if ($agent)
+                return $agent;
         }
 
         return null;
@@ -1316,9 +1363,10 @@ class AgentManager
                     $startOfDay = new \DateTime($date . ' 00:00:00');
                     $endOfDay = new \DateTime($date . ' 23:59:59');
                     $qb->andWhere('t.validatedAt >= :startOfDay AND t.validatedAt <= :endOfDay')
-                       ->setParameter('startOfDay', $startOfDay)
-                       ->setParameter('endOfDay', $endOfDay);
-                } catch (\Throwable $e) {}
+                        ->setParameter('startOfDay', $startOfDay)
+                        ->setParameter('endOfDay', $endOfDay);
+                } catch (\Throwable $e) {
+                }
             }
 
             $tickets = $qb->getQuery()->getResult();
@@ -1329,7 +1377,7 @@ class AgentManager
             $montantRefuse = 0.0;
 
             foreach ($tickets as $t) {
-                $statusUpper = strtoupper((string)$t->getStatus());
+                $statusUpper = strtoupper((string) $t->getStatus());
                 $isRefused = in_array($statusUpper, ['REFUSED', 'REJECTED', 'REFUSE']) || !empty($t->getRefusalComment());
                 $isValidated = $t->getIsUsed() || in_array($statusUpper, ['VALIDATED', 'USED', 'SCANNED', 'SCANNE', 'CONSOMME']);
 

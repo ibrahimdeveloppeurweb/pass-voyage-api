@@ -95,7 +95,7 @@ class CreditManager
         }
 
         if (!empty($compNameRaw)) {
-            $compNameStr = trim((string)$compNameRaw);
+            $compNameStr = trim((string) $compNameRaw);
             $company = $this->companyRepository->findOneBy(['name' => $compNameStr]);
             if (!$company) {
                 $allCompanies = $this->companyRepository->findAll();
@@ -146,7 +146,7 @@ class CreditManager
         } elseif (isset($data->isRound)) {
             $credit->setIsRoundTrip((bool) $data->isRound);
         } elseif (isset($data->typeVoyage)) {
-            $credit->setIsRoundTrip(strtoupper((string)$data->typeVoyage) === 'ALLER_RETOUR' || strtoupper((string)$data->typeVoyage) === 'ROUND_TRIP');
+            $credit->setIsRoundTrip(strtoupper((string) $data->typeVoyage) === 'ALLER_RETOUR' || strtoupper((string) $data->typeVoyage) === 'ROUND_TRIP');
         } elseif (isset($data->returnDate) && $data->returnDate) {
             $credit->setIsRoundTrip(true);
         }
@@ -215,10 +215,10 @@ class CreditManager
             $totalDebt = 0;
             $allUserCredits = $this->creditRepository->findBy(['passenger' => $passenger]);
             foreach ($allUserCredits as $cr) {
-                $st = strtoupper(trim((string)$cr->getStatus()));
+                $st = strtoupper(trim((string) $cr->getStatus()));
                 if (in_array($st, ['APPROVED', 'VALIDE']) || $cr->getId() === $credit->getId()) {
                     $toRepay = method_exists($cr, 'getAmountToRepay') ? $cr->getAmountToRepay() : ($cr->getAmountRequested() ?: $cr->getTotalAmount());
-                    $totalDebt += max(0, $toRepay - (int)$cr->getRepaidAmount());
+                    $totalDebt += max(0, $toRepay - (int) $cr->getRepaidAmount());
                 }
             }
             $passenger->setTotalDebt($totalDebt);
@@ -236,7 +236,7 @@ class CreditManager
         if ($passenger && $this->notificationService) {
             $trajet = sprintf("%s - %s", $credit->getDepartureCity() ?? 'Abidjan', $credit->getArrivalCity() ?? 'Yamoussoukro');
             $nbBillets = $credit->getPassengerCount() ?? 1;
-            $title = "Crédit Voyage Approuvé ! 🎉";
+            $title = "Crédit Voyage Approuvé ! ";
             $message = sprintf(
                 "Votre demande de crédit pour %d billet(s) (%s) d'un montant de %s FCFA a été approuvée avec succès. Vos billets et QR codes sont disponibles dans 'Mes Pass'.",
                 $nbBillets,
@@ -266,7 +266,7 @@ class CreditManager
         $passenger = $credit->getPassenger();
         if ($passenger && $this->notificationService) {
             $trajet = sprintf("%s - %s", $credit->getDepartureCity() ?? 'Abidjan', $credit->getArrivalCity() ?? 'Yamoussoukro');
-            $title = "Demande de Crédit Refusée ❌";
+            $title = "Demande de Crédit Refusée ";
             $motifText = !empty($reason) ? sprintf(" Motif : %s.", $reason) : "";
             $message = sprintf(
                 "Votre demande de crédit voyage pour le trajet %s a été refusée.%s",
@@ -519,7 +519,7 @@ class CreditManager
 
         $reqCompName = $data->departureCompany ?? $data->companyName ?? $data->compagnie ?? null;
         if (!empty($reqCompName)) {
-            $compNameStr = trim((string)$reqCompName);
+            $compNameStr = trim((string) $reqCompName);
             $comp = $this->companyRepository->findOneBy(['name' => $compNameStr]);
             if (!$comp) {
                 $comp = $this->companyRepository->findOneBy(['uuid' => $compNameStr]);
@@ -554,7 +554,7 @@ class CreditManager
             // Enregistrer l'opération de paiement des frais de service dans la table payment
             $feeAmount = (int) $creditRequest->getServiceFee();
             if ($feeAmount <= 0) {
-                $feeAmount = (isset($data->serviceFee) && (int)$data->serviceFee > 0) ? (int)$data->serviceFee : (600 * ($creditRequest->getPassengerCount() ?: 1));
+                $feeAmount = (isset($data->serviceFee) && (int) $data->serviceFee > 0) ? (int) $data->serviceFee : (600 * ($creditRequest->getPassengerCount() ?: 1));
             }
 
             if ($feeAmount > 0) {
@@ -674,12 +674,13 @@ class CreditManager
                     $qrPayload = $this->qrCodeService->generateQrPayload($credit, $code, $t->getTicketIndex() ?: 1, $t);
                     $qrDataUri = $this->qrCodeService->generateQrCodeDataUri($qrPayload);
 
-                    if (!$t->getQrCodeContent() || !str_contains((string)$t->getQrCodeContent(), 'ticketUuid')) {
+                    if (!$t->getQrCodeContent() || !str_contains((string) $t->getQrCodeContent(), 'ticketUuid')) {
                         try {
                             $t->setQrCodeContent($qrDataUri);
                             $this->em->persist($t);
                             $this->em->flush();
-                        } catch (\Throwable $e) {}
+                        } catch (\Throwable $e) {
+                        }
                     }
 
                     $ticketsArray[] = [
