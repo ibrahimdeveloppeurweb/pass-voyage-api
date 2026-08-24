@@ -111,4 +111,89 @@ class CompanyFundController extends AbstractController
             return $this->json($response, 500, [], ['groups' => ['company_fund:read']]);
         }
     }
+
+    /**
+     * @Route("/{uuid}/show", name="show_company_fund_private", methods={"GET"},
+     * options={"description"="Détails d'un fonds de roulement", "permission"="COMPANY:READ"})
+     */
+    #[Route('/{uuid}/show', name: 'show_company_fund_private', methods: ['GET'], options: ['description' => 'Détails d\'un fonds de roulement', 'permission' => 'COMPANY:READ'])]
+    public function show(string $uuid): JsonResponse
+    {
+        try {
+            $fund = $this->companyFundRepository->findOneBy(['uuid' => $uuid]);
+            if (!$fund && is_numeric($uuid)) {
+                $fund = $this->companyFundRepository->find((int)$uuid);
+            }
+            if (!$fund) {
+                throw new ExceptionApi('Fonds introuvable.', ['msg' => 'Fonds introuvable'], Response::HTTP_NOT_FOUND);
+            }
+            $response = (new JsonHelper($fund, null, 'success', 200, []))->serialize();
+            return $this->json($response, 200, [], ['groups' => ['company_fund:read', 'company:read', 'admin', 'user']]);
+        } catch (ExceptionApi $e) {
+            $response = (new JsonHelper(null, $e->getMessage(), 'bad_request', $e->getCode(), $e->getErrors()))->serialize();
+            return $this->json($response, 500, [], ['groups' => ['company_fund:read']]);
+        }
+    }
+
+    /**
+     * @Route("/{uuid}/recharge", name="recharge_company_fund_private", methods={"POST"},
+     * options={"description"="Recharger un fonds de roulement", "permission"="COMPANY:EDIT"})
+     */
+    #[Route('/{uuid}/recharge', name: 'recharge_company_fund_private', methods: ['POST'], options: ['description' => 'Recharger un fonds de roulement', 'permission' => 'COMPANY:EDIT'])]
+    public function recharge(Request $request, string $uuid): JsonResponse
+    {
+        try {
+            $data = json_decode($request->getContent());
+            $amount = (float)($data->amount ?? $data->montant ?? 0);
+            $reason = $data->reason ?? $data->motif ?? $data->comment ?? null;
+            $performedBy = $data->performedBy ?? 'Administrateur';
+
+            $fund = $this->companyFundManager->rechargeFund($uuid, $amount, $reason, $performedBy);
+            $response = (new JsonHelper($fund, 'Fonds rechargé avec succès.', 'success', 200, []))->serialize();
+            return $this->json($response, 200, [], ['groups' => ['company_fund:read', 'company:read', 'admin', 'user']]);
+        } catch (ExceptionApi $e) {
+            $response = (new JsonHelper(null, $e->getMessage(), 'bad_request', $e->getCode(), $e->getErrors()))->serialize();
+            return $this->json($response, 400, [], ['groups' => ['company_fund:read']]);
+        } catch (\Throwable $e) {
+            return $this->json(['message' => 'Erreur lors du rechargement : ' . $e->getMessage()], 400);
+        }
+    }
+
+    /**
+     * @Route("/{uuid}/history", name="history_company_fund_private", methods={"GET", "POST"},
+     * options={"description"="Historique des mouvements d'un fonds", "permission"="COMPANY:READ"})
+     */
+    #[Route('/{uuid}/history', name: 'history_company_fund_private', methods: ['GET', 'POST'], options: ['description' => 'Historique des mouvements d\'un fonds', 'permission' => 'COMPANY:READ'])]
+    public function history(Request $request, string $uuid): JsonResponse
+    {
+        try {
+            $type = $request->query->get('type');
+            $search = $request->query->get('search');
+            $history = $this->companyFundManager->getHistory($uuid, ['type' => $type, 'search' => $search]);
+            
+            $formatted = [];
+            foreach ($history as $h) {
+                $formatted[] = [
+                    'id' => $h->getId(),
+                    'uuid' => $h->getUuid(),
+                    'type' => $h->getType(),
+                    'amount' => $h->getAmount(),
+                    'previousBalance' => $h->getPreviousBalance(),
+                    'newBalance' => $h->getNewBalance(),
+                    'reference' => $h->getReference(),
+                    'description' => $h->getDescription(),
+                    'performedBy' => $h->getPerformedBy(),
+                    'createdAt' => $h->getCreatedAt() ? $h->getCreatedAt()->format('Y-m-d H:i:s') : null,
+                ];
+            }
+
+            $response = (new JsonHelper($formatted, null, 'success', 200, []))->serialize();
+            return $this->json($response, 200, [], ['groups' => ['company_fund_history:read', 'company_fund:read']]);
+        } catch (ExceptionApi $e) {
+            $response = (new JsonHelper(null, $e->getMessage(), 'bad_request', $e->getCode(), $e->getErrors()))->serialize();
+            return $this->json($response, 500, [], ['groups' => ['company_fund:read']]);
+        } catch (\Throwable $e) {
+            return $this->json(['message' => 'Erreur lors de la récupération : ' . $e->getMessage()], 400);
+        }
+    }
 }

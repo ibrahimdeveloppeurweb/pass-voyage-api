@@ -51,7 +51,7 @@ class AgentRepository extends ServiceEntityRepository
                 ->setParameter('search', $search);
         }
 
-        $qb->orderBy('a.lastname', 'ASC');
+        $qb->orderBy('a.id', 'DESC');
 
         return $qb->getQuery()->getResult();
     }

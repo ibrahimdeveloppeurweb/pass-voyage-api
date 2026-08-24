@@ -34,8 +34,85 @@ class AgentController extends AbstractController
     #[Route('/', name: 'index_agent', methods: ['GET'], options: ['description' => 'Liste des agents de gare', 'permission' => 'AGENT:LIST'])]
     public function index(Request $request): JsonResponse
     {
-        $agents = $this->agentRepository->findAll();
-        return $this->json($agents, 200, [], ['groups' => ['agent:read']]);
+        $agents = $this->agentRepository->findBy([], ['id' => 'DESC']);
+        $ticketRepo = $this->agentRepository->getEntityManager()->getRepository(\App\Entity\Business\Ticket::class);
+
+        $todayStart = new \DateTime('today 00:00:00');
+        $todayEnd = new \DateTime('today 23:59:59');
+
+        $result = [];
+        $conn = $this->agentRepository->getEntityManager()->getConnection();
+        $today = (new \DateTime('today'))->format('Y-m-d');
+
+        foreach ($agents as $agent) {
+            $scansToday = 0;
+            $scansTotal = 0;
+            try {
+                $agentId = $agent->getId();
+                $scansTotal = (int) $conn->fetchOne(
+                    'SELECT COUNT(*) FROM ticket WHERE validated_by_agent_id = ?',
+                    [$agentId]
+                );
+                $scansToday = (int) $conn->fetchOne(
+                    'SELECT COUNT(*) FROM ticket WHERE validated_by_agent_id = ? AND DATE(validated_at) = ?',
+                    [$agentId, (new \DateTime('today'))->format('Y-m-d')]
+                );
+            } catch (\Throwable $e) {
+                // fallback : try alternative column names
+                try {
+                    $agentId = $agent->getId();
+                    $rows = $conn->fetchAllAssociative(
+                        'SELECT COUNT(*) as cnt FROM ticket WHERE validated_by_agent_id = ?',
+                        [$agentId]
+                    );
+                    $scansTotal = isset($rows[0]['cnt']) ? (int)$rows[0]['cnt'] : 0;
+                } catch (\Throwable $e2) {}
+            }
+
+            $createdAtStr = $agent->getCreatedAt() ? $agent->getCreatedAt()->format('Y-m-d H:i:s') : '2026-08-01 00:00:00';
+
+            $result[] = [
+                'id' => $agent->getId(),
+                'uuid' => $agent->getUuid(),
+                'firstname' => $agent->getFirstname(),
+                'lastname' => $agent->getLastname(),
+                'nom' => sprintf('%s %s', $agent->getLastname() ?? '', $agent->getFirstname() ?? ''),
+                'phoneNumber' => $agent->getPhoneNumber(),
+                'telephone' => $agent->getPhoneNumber(),
+                'countryCode' => $agent->getCountryCode(),
+                'gender' => $agent->getGender(),
+                'residenceAddress' => $agent->getResidenceAddress(),
+                'isActivated' => $agent->getIsActivated(),
+                'isActive' => $agent->getIsActive(),
+                'status' => $agent->getStatus(),
+                'statut' => $agent->getStatus(),
+                'agentCode' => $agent->getAgentCode(),
+                'code' => $agent->getAgentCode(),
+                'matricule' => $agent->getAgentCode() ?: sprintf('AG-%03d', $agent->getId()),
+                'assignmentDate' => $agent->getAssignmentDate(),
+                'shiftStart' => $agent->getShiftStart() ?: '08:00',
+                'shiftEnd' => $agent->getShiftEnd() ?: '17:00',
+                'createdAt' => $createdAtStr,
+                'scansToday' => (int)$scansToday,
+                'scansTotal' => (int)$scansTotal,
+                'company' => $agent->getCompany() ? [
+                    'id' => $agent->getCompany()->getId(),
+                    'uuid' => $agent->getCompany()->getUuid(),
+                    'name' => $agent->getCompany()->getName(),
+                    'nom' => $agent->getCompany()->getName(),
+                ] : null,
+                'companyName' => $agent->getCompany() ? $agent->getCompany()->getName() : null,
+                'stationAssigned' => $agent->getStationAssigned() ? [
+                    'id' => $agent->getStationAssigned()->getId(),
+                    'uuid' => $agent->getStationAssigned()->getUuid(),
+                    'name' => $agent->getStationAssigned()->getName(),
+                    'nom' => $agent->getStationAssigned()->getName(),
+                ] : null,
+                'stationName' => $agent->getStationAssigned() ? $agent->getStationAssigned()->getName() : null,
+            ];
+        }
+
+        return $this->json(['status' => 'success', 'data' => $result, 'agents' => $result], 200, [], ['groups' => ['agent:read']]);
     }
 
     /**

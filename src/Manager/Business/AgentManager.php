@@ -324,6 +324,13 @@ class AgentManager
             throw new \Exception("Agent introuvable");
         }
 
+        $st = strtoupper((string)$agent->getStatus());
+        $isVerified = in_array($st, ['APPROVED', 'VALIDATED', 'VÉRIFIÉ', 'VERIFIE', 'ACTIF', 'ACTIVE']) || $agent->getIsActivated() === true;
+
+        if ($isVerified) {
+            throw new \Exception("Action impossible : Les comptes agents vérifiés et actifs ne peuvent pas être supprimés.");
+        }
+
         $agent->setDeletedAt(new \DateTime());
 
         if ($user = $this->userRepository->findOneBy(['agent' => $agent])) {
@@ -485,15 +492,22 @@ class AgentManager
             'token' => $token,
             'agentStatus' => $agent->getStatus(),
             'agent' => [
-                'id' => $agent->getId(),
-                'uuid' => $agent->getUuid(),
-                'firstname' => $agent->getFirstname(),
-                'lastname' => $agent->getLastname(),
-                'phoneNumber' => $agent->getPhoneNumber(),
-                'status' => $agent->getStatus(),
-                'isActivated' => $agent->getIsActivated(),
-                'company' => $agent->getCompany()?->getName(),
-                'station' => $agent->getStationAssigned()?->getName(),
+                'id'              => $agent->getId(),
+                'uuid'            => $agent->getUuid(),
+                'firstname'       => $agent->getFirstname(),
+                'lastname'        => $agent->getLastname(),
+                'phoneNumber'     => $agent->getPhoneNumber(),
+                'gender'          => $agent->getGender(),
+                'residenceAddress'=> $agent->getResidenceAddress(),
+                'agentCode'       => $agent->getAgentCode(),
+                'code'            => $agent->getAgentCode(),
+                'status'          => $agent->getStatus(),
+                'isActivated'     => $agent->getIsActivated(),
+                'createdAt'       => $agent->getCreatedAt()?->format('Y-m-d H:i:s'),
+                'company'         => $agent->getCompany()?->getName(),
+                'station'         => $agent->getStationAssigned()?->getName(),
+                'stationName'     => $agent->getStationAssigned()?->getName(),
+                'companyName'     => $agent->getCompany()?->getName(),
             ]
         ];
     }
@@ -758,13 +772,22 @@ class AgentManager
             'station' => $agent->getStationAssigned()?->getName() ?? 'Gare Principale',
             'recentActivities' => $recentActivities,
             'agent' => [
-                'id' => $agent->getId(),
-                'uuid' => $agent->getUuid(),
-                'firstname' => $agent->getFirstname(),
-                'lastname' => $agent->getLastname(),
-                'phoneNumber' => $agent->getPhoneNumber(),
-                'status' => $agent->getStatus(),
-                'agentCode' => $agentCode,
+                'id'              => $agent->getId(),
+                'uuid'            => $agent->getUuid(),
+                'firstname'       => $agent->getFirstname(),
+                'lastname'        => $agent->getLastname(),
+                'phoneNumber'     => $agent->getPhoneNumber(),
+                'gender'          => $agent->getGender(),
+                'residenceAddress'=> $agent->getResidenceAddress(),
+                'agentCode'       => $agentCode,
+                'code'            => $agentCode,
+                'status'          => $agent->getStatus(),
+                'isActivated'     => $agent->getIsActivated(),
+                'createdAt'       => $agent->getCreatedAt()?->format('Y-m-d H:i:s'),
+                'company'         => $agent->getCompany()?->getName(),
+                'station'         => $agent->getStationAssigned()?->getName(),
+                'companyName'     => $agent->getCompany()?->getName(),
+                'stationName'     => $agent->getStationAssigned()?->getName(),
             ]
         ];
     }
@@ -1092,6 +1115,20 @@ class AgentManager
                         $msg,
                         'TICKET_SCAN'
                     );
+                } catch (\Throwable $e) {
+                }
+            }
+
+            // Deduct ticket price from company fund if validated
+            if ($action !== 'REFUSED') {
+                try {
+                    $companyFundManager = new CompanyFundManager(
+                        $this->em,
+                        $this->em->getRepository(\App\Entity\Business\CompanyFund::class),
+                        $this->em->getRepository(\App\Entity\Business\CompanyFundHistory::class),
+                        $this->em->getRepository(\App\Entity\Business\Company::class)
+                    );
+                    $companyFundManager->deductTicketScan($ticket, $agent);
                 } catch (\Throwable $e) {
                 }
             }

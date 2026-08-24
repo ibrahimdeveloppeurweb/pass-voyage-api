@@ -93,8 +93,28 @@ class Agent
     #[Groups(['agent:read'])]
     private $shiftEnd = '17:00';
 
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    #[Groups(['agent:read'])]
+    private $createdAt;
+
     #[ORM\OneToOne(mappedBy: 'agent', targetEntity: User::class)]
     private $user;
+
+    public function __construct()
+    {
+        $this->createdAt = new \DateTime();
+    }
+
+    public function getCreatedAt(): ?\DateTimeInterface
+    {
+        return $this->createdAt;
+    }
+
+    public function setCreatedAt(?\DateTimeInterface $createdAt): self
+    {
+        $this->createdAt = $createdAt;
+        return $this;
+    }
 
     public function getId(): ?int
     {

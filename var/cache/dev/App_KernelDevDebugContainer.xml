@@ -638,6 +638,10 @@
       <tag name="container.excluded" source="because it's a Doctrine entity"/>
       <tag name="container.excluded" source="with #[Doctrine\ORM\Mapping\Entity] attribute"/>
     </service>
+    <service id="App\Entity\Business\CompanyFundHistory" class="App\Entity\Business\CompanyFundHistory" autowire="true" autoconfigure="true">
+      <tag name="container.excluded" source="because it's a Doctrine entity"/>
+      <tag name="container.excluded" source="with #[Doctrine\ORM\Mapping\Entity] attribute"/>
+    </service>
     <service id="App\Entity\Business\CompanyInvoice" class="App\Entity\Business\CompanyInvoice" autowire="true" autoconfigure="true">
       <tag name="container.excluded" source="because it's a Doctrine entity"/>
       <tag name="container.excluded" source="with #[Doctrine\ORM\Mapping\Entity] attribute"/>
@@ -792,6 +796,7 @@
     <service id="App\Manager\Business\CompanyFundManager" class="App\Manager\Business\CompanyFundManager" autowire="true" autoconfigure="true">
       <argument type="service" id="doctrine.orm.default_entity_manager"/>
       <argument type="service" id="App\Repository\Business\CompanyFundRepository"/>
+      <argument type="service" id="App\Repository\Business\CompanyFundHistoryRepository"/>
       <argument type="service" id="App\Repository\Business\CompanyRepository"/>
     </service>
     <service id="App\Manager\Business\CompanyInvoiceManager" class="App\Manager\Business\CompanyInvoiceManager" autowire="true" autoconfigure="true">
@@ -906,6 +911,10 @@
       <argument type="service" id="doctrine"/>
     </service>
     <service id="App\Repository\Business\CityRepository" class="App\Repository\Business\CityRepository" autowire="true" autoconfigure="true">
+      <tag name="doctrine.repository_service"/>
+      <argument type="service" id="doctrine"/>
+    </service>
+    <service id="App\Repository\Business\CompanyFundHistoryRepository" class="App\Repository\Business\CompanyFundHistoryRepository" autowire="true" autoconfigure="true">
       <tag name="doctrine.repository_service"/>
       <argument type="service" id="doctrine"/>
     </service>
@@ -3454,7 +3463,7 @@
     <service id="doctrine.orm.configuration" class="Doctrine\ORM\Configuration" abstract="true"/>
     <service id="doctrine.orm.entity_manager.abstract" class="Doctrine\ORM\EntityManager" lazy="true" abstract="true"/>
     <service id="doctrine.orm.container_repository_factory" class="Doctrine\Bundle\DoctrineBundle\Repository\ContainerRepositoryFactory">
-      <argument type="service" id=".service_locator.xoBiLpJ"/>
+      <argument type="service" id=".service_locator.wmJEBdy"/>
     </service>
     <service id="doctrine.orm.manager_configurator.abstract" class="Doctrine\Bundle\DoctrineBundle\ManagerConfigurator" abstract="true">
       <argument type="collection"/>
@@ -5784,6 +5793,8 @@
     <service id=".abstract.instanceof.App\Entity\Business\Company" class="App\Entity\Business\Company" autowire="true" autoconfigure="true" abstract="true"/>
     <service id=".instanceof.App\Entity\Business\CompanyFund.0.App\Entity\Business\CompanyFund" class="App\Entity\Business\CompanyFund" autowire="true" abstract="true"/>
     <service id=".abstract.instanceof.App\Entity\Business\CompanyFund" class="App\Entity\Business\CompanyFund" autowire="true" autoconfigure="true" abstract="true"/>
+    <service id=".instanceof.App\Entity\Business\CompanyFundHistory.0.App\Entity\Business\CompanyFundHistory" class="App\Entity\Business\CompanyFundHistory" autowire="true" abstract="true"/>
+    <service id=".abstract.instanceof.App\Entity\Business\CompanyFundHistory" class="App\Entity\Business\CompanyFundHistory" autowire="true" autoconfigure="true" abstract="true"/>
     <service id=".instanceof.App\Entity\Business\CompanyInvoice.0.App\Entity\Business\CompanyInvoice" class="App\Entity\Business\CompanyInvoice" autowire="true" abstract="true"/>
     <service id=".abstract.instanceof.App\Entity\Business\CompanyInvoice" class="App\Entity\Business\CompanyInvoice" autowire="true" autoconfigure="true" abstract="true"/>
     <service id=".instanceof.App\Entity\Business\Credit.0.App\Entity\Business\Credit" class="App\Entity\Business\Credit" autowire="true" abstract="true"/>
@@ -5849,6 +5860,8 @@
     <service id=".abstract.instanceof.App\Repository\Business\AgentRepository" class="App\Repository\Business\AgentRepository" autowire="true" autoconfigure="true" abstract="true"/>
     <service id=".instanceof.Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepositoryInterface.0.App\Repository\Business\CityRepository" class="App\Repository\Business\CityRepository" autowire="true" abstract="true"/>
     <service id=".abstract.instanceof.App\Repository\Business\CityRepository" class="App\Repository\Business\CityRepository" autowire="true" autoconfigure="true" abstract="true"/>
+    <service id=".instanceof.Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepositoryInterface.0.App\Repository\Business\CompanyFundHistoryRepository" class="App\Repository\Business\CompanyFundHistoryRepository" autowire="true" abstract="true"/>
+    <service id=".abstract.instanceof.App\Repository\Business\CompanyFundHistoryRepository" class="App\Repository\Business\CompanyFundHistoryRepository" autowire="true" autoconfigure="true" abstract="true"/>
     <service id=".instanceof.Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepositoryInterface.0.App\Repository\Business\CompanyFundRepository" class="App\Repository\Business\CompanyFundRepository" autowire="true" abstract="true"/>
     <service id=".abstract.instanceof.App\Repository\Business\CompanyFundRepository" class="App\Repository\Business\CompanyFundRepository" autowire="true" autoconfigure="true" abstract="true"/>
     <service id=".instanceof.Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepositoryInterface.0.App\Repository\Business\CompanyInvoiceRepository" class="App\Repository\Business\CompanyInvoiceRepository" autowire="true" abstract="true"/>
@@ -6729,7 +6742,7 @@
         <argument key="doctrine.orm.default_listeners.attach_entity_listeners" type="service_closure" id="doctrine.orm.default_listeners.attach_entity_listeners"/>
       </argument>
     </service>
-    <service id=".service_locator.xoBiLpJ" class="Symfony\Component\DependencyInjection\ServiceLocator">
+    <service id=".service_locator.wmJEBdy" class="Symfony\Component\DependencyInjection\ServiceLocator">
       <tag name="container.service_locator"/>
       <argument type="collection">
         <argument key="App\Repository\Admin\AdminRepository" type="service_closure" id="App\Repository\Admin\AdminRepository"/>
@@ -6737,6 +6750,7 @@
         <argument key="App\Repository\Admin\UserRepository" type="service_closure" id="App\Repository\Admin\UserRepository"/>
         <argument key="App\Repository\Business\AgentRepository" type="service_closure" id="App\Repository\Business\AgentRepository"/>
         <argument key="App\Repository\Business\CityRepository" type="service_closure" id="App\Repository\Business\CityRepository"/>
+        <argument key="App\Repository\Business\CompanyFundHistoryRepository" type="service_closure" id="App\Repository\Business\CompanyFundHistoryRepository"/>
         <argument key="App\Repository\Business\CompanyFundRepository" type="service_closure" id="App\Repository\Business\CompanyFundRepository"/>
         <argument key="App\Repository\Business\CompanyInvoiceRepository" type="service_closure" id="App\Repository\Business\CompanyInvoiceRepository"/>
         <argument key="App\Repository\Business\CompanyRepository" type="service_closure" id="App\Repository\Business\CompanyRepository"/>
