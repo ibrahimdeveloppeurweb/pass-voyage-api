@@ -352,7 +352,7 @@ class AgentManager
         $accountExists = ($existingAgent !== null);
 
         $otpCode = (string) rand(1000, 9999);
-        $expiresAt = new \DateTime('+10 minutes');
+        $expiresAt = new \DateTime('+2 minutes');
 
         $userOtp = $this->userOtpRepository->findOneBy(['phone' => $phone]);
         if (!$userOtp) {
@@ -897,6 +897,15 @@ class AgentManager
             ];
         }
 
+        if (method_exists($ticket, 'getExpirationDate') && $ticket->getExpirationDate() && $ticket->getExpirationDate() < new \DateTime()) {
+            $dateFormated = $ticket->getExpirationDate()->format('d/m/Y à H:i');
+            return [
+                'status' => 'EXPIRED',
+                'message' => "Ce billet ({$ticket->getTicketNumber()}) est expiré depuis le {$dateFormated} et ne peut plus être validé."
+            ];
+        }
+
+
         $ticketCompany = $ticket->getCompany() ?? ($ticket->getCreditRequest() ? $ticket->getCreditRequest()->getCompany() : null);
         $agentCompany = $agent ? $agent->getCompany() : null;
 
@@ -1090,6 +1099,26 @@ class AgentManager
                     $ticket->setValidatedByAgent($agent);
                 if ($station)
                     $ticket->setValidatedAtStation($station);
+
+                $contact = $data->contact ?? null;
+                if ($contact) {
+                    $ticket->setVerificationContact(trim((string)$contact));
+                }
+
+                $passengerPhotoBase64 = $data->passengerPhoto ?? $data->passengerPhotoBase64 ?? null;
+                if ($passengerPhotoBase64) {
+                    $decoded = base64_decode($passengerPhotoBase64);
+                    if ($decoded !== false) {
+                        $dir = __DIR__ . '/../../../public/uploads/boarding/';
+                        if (!is_dir($dir)) {
+                            mkdir($dir, 0777, true);
+                        }
+                        $filename = 'verif_' . $ticket->getId() . '_' . time() . '.jpg';
+                        file_put_contents($dir . $filename, $decoded);
+                        $ticket->setPassengerPhoto('/uploads/boarding/' . $filename);
+                    }
+                }
+
                 $ticket->setStatus('SCANNED');
             }
 

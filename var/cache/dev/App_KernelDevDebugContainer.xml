@@ -321,6 +321,18 @@
         <argument>Generate path routes for Passe Voyage</argument>
       </call>
     </service>
+    <service id="App\Command\ExpireTicketsCommand" class="App\Command\ExpireTicketsCommand" autowire="true" autoconfigure="true">
+      <tag name="console.command" command="app:tickets:expire" description="Vérifie et met à jour le statut des billets dont la date d'expiration est dépassée." help=""/>
+      <tag name="console.command"/>
+      <tag name="container.no_preload"/>
+      <argument type="service" id="doctrine.orm.default_entity_manager"/>
+      <call method="setName">
+        <argument>app:tickets:expire</argument>
+      </call>
+      <call method="setDescription">
+        <argument>Vérifie et met à jour le statut des billets dont la date d'expiration est dépassée.</argument>
+      </call>
+    </service>
     <service id="App\Command\SyncAdminRoutesCommand" class="App\Command\SyncAdminRoutesCommand" autowire="true" autoconfigure="true">
       <tag name="console.command" command="z:g:sync:admin-routes" description="Synchronise les nouvelles routes avec le rôle super administrateur existant." help=""/>
       <tag name="console.command"/>
@@ -654,6 +666,10 @@
       <tag name="container.excluded" source="because it's a Doctrine entity"/>
       <tag name="container.excluded" source="with #[Doctrine\ORM\Mapping\Entity] attribute"/>
     </service>
+    <service id="App\Entity\Business\OtpVerification" class="App\Entity\Business\OtpVerification" autowire="true" autoconfigure="true">
+      <tag name="container.excluded" source="because it's a Doctrine entity"/>
+      <tag name="container.excluded" source="with #[Doctrine\ORM\Mapping\Entity] attribute"/>
+    </service>
     <service id="App\Entity\Business\Passenger" class="App\Entity\Business\Passenger" autowire="true" autoconfigure="true">
       <tag name="container.excluded" source="because it's a Doctrine entity"/>
       <tag name="container.excluded" source="with #[Doctrine\ORM\Mapping\Entity] attribute"/>
@@ -815,6 +831,7 @@
       <argument type="service" id="App\Repository\CompanyRepository"/>
       <argument type="service" id="App\Service\QrCodeService"/>
       <argument type="service" id="App\Service\NotificationService"/>
+      <argument type="service" id="App\Manager\Business\CreditPolicyManager"/>
     </service>
     <service id="App\Manager\Business\CreditPolicyManager" class="App\Manager\Business\CreditPolicyManager" autowire="true" autoconfigure="true">
       <argument type="service" id="doctrine.orm.default_entity_manager"/>
@@ -827,6 +844,7 @@
       <argument type="service" id="App\Repository\CompanyRepository"/>
       <argument type="service" id="App\Service\QrCodeService"/>
       <argument type="service" id="App\Service\NotificationService"/>
+      <argument type="service" id="App\Manager\Business\CreditPolicyManager"/>
     </service>
     <service id="App\Manager\Business\PassengerManager" class="App\Manager\Business\PassengerManager" autowire="true" autoconfigure="true">
       <argument type="service" id="doctrine.orm.default_entity_manager"/>
@@ -1084,7 +1102,7 @@
     </service>
     <service id="argument_resolver.service" class="Symfony\Component\HttpKernel\Controller\ArgumentResolver\ServiceValueResolver">
       <tag name="Symfony\Component\HttpKernel\Controller\ArgumentResolver\ServiceValueResolver" priority="-50">controller.argument_value_resolver</tag>
-      <argument type="service" id=".service_locator._H89vWv"/>
+      <argument type="service" id=".service_locator.D4FG4Ru"/>
     </service>
     <service id="argument_resolver.default" class="Symfony\Component\HttpKernel\Controller\ArgumentResolver\DefaultValueResolver">
       <tag name="Symfony\Component\HttpKernel\Controller\ArgumentResolver\DefaultValueResolver" priority="-100">controller.argument_value_resolver</tag>
@@ -2555,7 +2573,7 @@
     </service>
     <service id="argument_resolver.not_tagged_controller" class="Symfony\Component\HttpKernel\Controller\ArgumentResolver\NotTaggedControllerValueResolver">
       <tag name="controller.argument_value_resolver" priority="-200"/>
-      <argument type="service" id=".service_locator._H89vWv"/>
+      <argument type="service" id=".service_locator.D4FG4Ru"/>
     </service>
     <service id="routing.resolver" class="Symfony\Component\Config\Loader\LoaderResolver">
       <call method="addLoader">
@@ -5670,6 +5688,9 @@
     <service id=".instanceof.Symfony\Component\Console\Command\Command.0.App\Command\CommandPath" class="App\Command\CommandPath" autowire="true" abstract="true"/>
     <service id=".instanceof.App\Command\CommandPath.0.App\Command\CommandPath" class="App\Command\CommandPath" autowire="true" abstract="true"/>
     <service id=".abstract.instanceof.App\Command\CommandPath" class="App\Command\CommandPath" autowire="true" autoconfigure="true" abstract="true"/>
+    <service id=".instanceof.Symfony\Component\Console\Command\Command.0.App\Command\ExpireTicketsCommand" class="App\Command\ExpireTicketsCommand" autowire="true" abstract="true"/>
+    <service id=".instanceof.App\Command\ExpireTicketsCommand.0.App\Command\ExpireTicketsCommand" class="App\Command\ExpireTicketsCommand" autowire="true" abstract="true"/>
+    <service id=".abstract.instanceof.App\Command\ExpireTicketsCommand" class="App\Command\ExpireTicketsCommand" autowire="true" autoconfigure="true" abstract="true"/>
     <service id=".instanceof.Symfony\Component\Console\Command\Command.0.App\Command\SyncAdminRoutesCommand" class="App\Command\SyncAdminRoutesCommand" autowire="true" abstract="true"/>
     <service id=".instanceof.App\Command\SyncAdminRoutesCommand.0.App\Command\SyncAdminRoutesCommand" class="App\Command\SyncAdminRoutesCommand" autowire="true" abstract="true"/>
     <service id=".abstract.instanceof.App\Command\SyncAdminRoutesCommand" class="App\Command\SyncAdminRoutesCommand" autowire="true" autoconfigure="true" abstract="true"/>
@@ -5801,6 +5822,8 @@
     <service id=".abstract.instanceof.App\Entity\Business\Credit" class="App\Entity\Business\Credit" autowire="true" autoconfigure="true" abstract="true"/>
     <service id=".instanceof.App\Entity\Business\CreditPolicy.0.App\Entity\Business\CreditPolicy" class="App\Entity\Business\CreditPolicy" autowire="true" abstract="true"/>
     <service id=".abstract.instanceof.App\Entity\Business\CreditPolicy" class="App\Entity\Business\CreditPolicy" autowire="true" autoconfigure="true" abstract="true"/>
+    <service id=".instanceof.App\Entity\Business\OtpVerification.0.App\Entity\Business\OtpVerification" class="App\Entity\Business\OtpVerification" autowire="true" abstract="true"/>
+    <service id=".abstract.instanceof.App\Entity\Business\OtpVerification" class="App\Entity\Business\OtpVerification" autowire="true" autoconfigure="true" abstract="true"/>
     <service id=".instanceof.App\Entity\Business\Passenger.0.App\Entity\Business\Passenger" class="App\Entity\Business\Passenger" autowire="true" abstract="true"/>
     <service id=".abstract.instanceof.App\Entity\Business\Passenger" class="App\Entity\Business\Passenger" autowire="true" autoconfigure="true" abstract="true"/>
     <service id=".instanceof.App\Entity\Business\PassengerContact.0.App\Entity\Business\PassengerContact" class="App\Entity\Business\PassengerContact" autowire="true" abstract="true"/>
@@ -6624,6 +6647,24 @@
       <argument type="service" id="service_container"/>
       <factory service=".service_locator.1vYpZ1B" method="withContext"/>
     </service>
+    <service id=".service_locator.z0A7H.F" class="Symfony\Component\DependencyInjection\ServiceLocator">
+      <tag name="container.service_locator"/>
+      <argument type="collection">
+        <argument key="em" type="service_closure" id="doctrine.orm.default_entity_manager"/>
+      </argument>
+    </service>
+    <service id=".service_locator.z0A7H.F.App\Controller\Business\AgentController::sendOtp()" class="Symfony\Component\DependencyInjection\ServiceLocator">
+      <tag name="container.service_locator_context" id="App\Controller\Business\AgentController::sendOtp()"/>
+      <argument>App\Controller\Business\AgentController::sendOtp()</argument>
+      <argument type="service" id="service_container"/>
+      <factory service=".service_locator.z0A7H.F" method="withContext"/>
+    </service>
+    <service id=".service_locator.z0A7H.F.App\Controller\Business\AgentController::verifyOtp()" class="Symfony\Component\DependencyInjection\ServiceLocator">
+      <tag name="container.service_locator_context" id="App\Controller\Business\AgentController::verifyOtp()"/>
+      <argument>App\Controller\Business\AgentController::verifyOtp()</argument>
+      <argument type="service" id="service_container"/>
+      <factory service=".service_locator.z0A7H.F" method="withContext"/>
+    </service>
     <service id=".service_locator.Xwne7t5" class="Symfony\Component\DependencyInjection\ServiceLocator">
       <tag name="container.service_locator"/>
       <argument type="collection">
@@ -6648,17 +6689,21 @@
       <argument type="service" id="service_container"/>
       <factory service=".service_locator.DYr0wyw" method="withContext"/>
     </service>
-    <service id=".service_locator._H89vWv" class="Symfony\Component\DependencyInjection\ServiceLocator">
+    <service id=".service_locator.D4FG4Ru" class="Symfony\Component\DependencyInjection\ServiceLocator">
       <tag name="container.service_locator"/>
       <argument type="collection">
         <argument key="kernel::registerContainerConfiguration" type="service_closure" id=".service_locator.1vYpZ1B.kernel::registerContainerConfiguration()"/>
         <argument key="App\Kernel::registerContainerConfiguration" type="service_closure" id=".service_locator.1vYpZ1B.kernel::registerContainerConfiguration()"/>
         <argument key="kernel::loadRoutes" type="service_closure" id=".service_locator.1vYpZ1B.kernel::loadRoutes()"/>
         <argument key="App\Kernel::loadRoutes" type="service_closure" id=".service_locator.1vYpZ1B.kernel::loadRoutes()"/>
+        <argument key="App\Controller\Business\AgentController::sendOtp" type="service_closure" id=".service_locator.z0A7H.F.App\Controller\Business\AgentController::sendOtp()"/>
+        <argument key="App\Controller\Business\AgentController::verifyOtp" type="service_closure" id=".service_locator.z0A7H.F.App\Controller\Business\AgentController::verifyOtp()"/>
         <argument key="App\Controller\Extra\SharedController::index" type="service_closure" id=".service_locator.Xwne7t5.App\Controller\Extra\SharedController::index()"/>
         <argument key="App\Controller\Security\SecurityController::refreshTokenAction" type="service_closure" id=".service_locator.DYr0wyw.App\Controller\Security\SecurityController::refreshTokenAction()"/>
         <argument key="kernel:registerContainerConfiguration" type="service_closure" id=".service_locator.1vYpZ1B.kernel::registerContainerConfiguration()"/>
         <argument key="kernel:loadRoutes" type="service_closure" id=".service_locator.1vYpZ1B.kernel::loadRoutes()"/>
+        <argument key="App\Controller\Business\AgentController:sendOtp" type="service_closure" id=".service_locator.z0A7H.F.App\Controller\Business\AgentController::sendOtp()"/>
+        <argument key="App\Controller\Business\AgentController:verifyOtp" type="service_closure" id=".service_locator.z0A7H.F.App\Controller\Business\AgentController::verifyOtp()"/>
         <argument key="App\Controller\Extra\SharedController:index" type="service_closure" id=".service_locator.Xwne7t5.App\Controller\Extra\SharedController::index()"/>
         <argument key="App\Controller\Security\SecurityController:refreshTokenAction" type="service_closure" id=".service_locator.DYr0wyw.App\Controller\Security\SecurityController::refreshTokenAction()"/>
       </argument>
@@ -7259,6 +7304,13 @@
       <argument>false</argument>
       <argument type="service_closure" id="App\Command\CommandPath"/>
     </service>
+    <service id=".App\Command\ExpireTicketsCommand.lazy" class="Symfony\Component\Console\Command\LazyCommand">
+      <argument>app:tickets:expire</argument>
+      <argument type="collection"/>
+      <argument>Vérifie et met à jour le statut des billets dont la date d'expiration est dépassée.</argument>
+      <argument>false</argument>
+      <argument type="service_closure" id="App\Command\ExpireTicketsCommand"/>
+    </service>
     <service id=".App\Command\SyncAdminRoutesCommand.lazy" class="Symfony\Component\Console\Command\LazyCommand">
       <argument>z:g:sync:admin-routes</argument>
       <argument type="collection"/>
@@ -7840,9 +7892,10 @@
     </service>
     <service id="console.command_loader" class="Symfony\Component\Console\CommandLoader\ContainerCommandLoader" public="true">
       <tag name="container.no_preload"/>
-      <argument type="service" id=".service_locator.GnEn8O8"/>
+      <argument type="service" id=".service_locator.8FR96qC"/>
       <argument type="collection">
         <argument key="z:g:path">App\Command\CommandPath</argument>
+        <argument key="app:tickets:expire">App\Command\ExpireTicketsCommand</argument>
         <argument key="z:g:sync:admin-routes">App\Command\SyncAdminRoutesCommand</argument>
         <argument key="z:g:sync:menu-paths">App\Command\SyncMenuPathsCommand</argument>
         <argument key="app:update-uuids">App\Command\UpdateEntityUuidsCommand</argument>
@@ -7948,10 +8001,11 @@
         <argument key="make:webhook">maker.auto_command.make_webhook</argument>
       </argument>
     </service>
-    <service id=".service_locator.GnEn8O8" class="Symfony\Component\DependencyInjection\ServiceLocator">
+    <service id=".service_locator.8FR96qC" class="Symfony\Component\DependencyInjection\ServiceLocator">
       <tag name="container.service_locator"/>
       <argument type="collection">
         <argument key="App\Command\CommandPath" type="service_closure" id=".App\Command\CommandPath.lazy"/>
+        <argument key="App\Command\ExpireTicketsCommand" type="service_closure" id=".App\Command\ExpireTicketsCommand.lazy"/>
         <argument key="App\Command\SyncAdminRoutesCommand" type="service_closure" id=".App\Command\SyncAdminRoutesCommand.lazy"/>
         <argument key="App\Command\SyncMenuPathsCommand" type="service_closure" id=".App\Command\SyncMenuPathsCommand.lazy"/>
         <argument key="App\Command\UpdateEntityUuidsCommand" type="service_closure" id=".App\Command\UpdateEntityUuidsCommand.lazy"/>
@@ -8202,7 +8256,7 @@
     <service id="doctrine.fixtures.provider" alias="doctrine.fixtures.loader"/>
     <service id="container.env_var_processors_locator" alias=".service_locator.ryAvHi4" public="true"/>
     <service id="twig.loader.filesystem" alias="twig.loader.native_filesystem"/>
-    <service id="argument_resolver.controller_locator" alias=".service_locator._H89vWv"/>
+    <service id="argument_resolver.controller_locator" alias=".service_locator.D4FG4Ru"/>
     <service id="doctrine.id_generator_locator" alias=".service_locator.W55Po6X"/>
     <service id="twig.loader" alias="twig.loader.native_filesystem"/>
     <service id="Psr\Log\LoggerInterface" alias="logger"/>
@@ -8221,6 +8275,7 @@
     <service id="security.event_dispatcher.api" alias="debug.security.event_dispatcher.api"/>
     <service id="doctrine.orm.default_metadata_driver" alias=".doctrine.orm.default_metadata_driver"/>
     <service id=".service_locator.c0wzfI4" alias=".service_locator.1vYpZ1B"/>
+    <service id=".service_locator.0ekWYPZ" alias=".service_locator.z0A7H.F"/>
     <service id=".service_locator.6UbRNPP" alias=".service_locator.Xwne7t5"/>
     <service id=".service_locator.70qpV._" alias=".service_locator.DYr0wyw"/>
     <service id=".service_locator.wexvQVJ" alias=".service_locator.TJNRSaV"/>

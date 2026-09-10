@@ -93,6 +93,10 @@ class Passenger
 
     #[ORM\Column(type: 'integer')]
     #[Groups(['passenger:read'])]
+    private $consecutiveGoodRepayments = 0;
+
+    #[ORM\Column(type: 'integer')]
+    #[Groups(['passenger:read'])]
     private $maxCreditLimit = 200000;
 
     #[ORM\Column(type: 'integer')]
@@ -111,6 +115,10 @@ class Passenger
     #[Groups(['passenger:read'])]
     private $isIdentified = false;
 
+    #[ORM\Column(type: 'integer')]
+    #[Groups(['passenger:read'])]
+    private $serviceFeeWallet = 0;
+
     #[ORM\Column(type: 'boolean')]
     #[Groups(['passenger:read'])]
     private $isBlacklisted = false;
@@ -118,6 +126,10 @@ class Passenger
     #[ORM\Column(type: 'string', length: 500, nullable: true)]
     #[Groups(['passenger:read'])]
     private ?string $fcmToken = null;
+
+    #[ORM\Column(type: 'string', length: 20, nullable: true)]
+    #[Groups(['passenger:read'])]
+    private ?string $avalPhone = null;
 
     #[ORM\OneToMany(mappedBy: 'passenger', targetEntity: Credit::class, orphanRemoval: true)]
     private Collection $creditRequests;
@@ -153,6 +165,9 @@ class Passenger
     public function getPinCode(): ?string { return $this->pinCode; }
     public function setPinCode(?string $pinCode): self { $this->pinCode = $pinCode; return $this; }
 
+    public function getAvalPhone(): ?string { return $this->avalPhone; }
+    public function setAvalPhone(?string $avalPhone): self { $this->avalPhone = $avalPhone; return $this; }
+
     public function getGender(): ?string { return $this->gender; }
     public function setGender(?string $gender): self { $this->gender = $gender; return $this; }
 
@@ -186,6 +201,9 @@ class Passenger
     public function getProfileType(): ?string { return $this->profileType; }
     public function setProfileType(string $profileType): self { $this->profileType = $profileType; return $this; }
 
+    public function getConsecutiveGoodRepayments(): ?int { return $this->consecutiveGoodRepayments; }
+    public function setConsecutiveGoodRepayments(int $consecutiveGoodRepayments): self { $this->consecutiveGoodRepayments = $consecutiveGoodRepayments; return $this; }
+
     public function getMaxCreditLimit(): ?int { return $this->maxCreditLimit; }
     public function setMaxCreditLimit(int $maxCreditLimit): self { $this->maxCreditLimit = $maxCreditLimit; return $this; }
 
@@ -200,6 +218,9 @@ class Passenger
 
     public function getIsIdentified(): ?bool { return $this->isIdentified; }
     public function setIsIdentified(bool $isIdentified): self { $this->isIdentified = $isIdentified; return $this; }
+
+    public function getServiceFeeWallet(): ?int { return $this->serviceFeeWallet; }
+    public function setServiceFeeWallet(int $serviceFeeWallet): self { $this->serviceFeeWallet = $serviceFeeWallet; return $this; }
 
     public function getIsBlacklisted(): ?bool { return $this->isBlacklisted; }
     public function setIsBlacklisted(bool $isBlacklisted): self { $this->isBlacklisted = $isBlacklisted; return $this; }
@@ -291,7 +312,8 @@ class Passenger
         return $this;
     }
 
-    public function getDaysOverdue(int $delaiDays = 14): int
+    #[Groups(['passenger:read'])]
+    public function getDaysOverdue(): int
     {
         if (($this->totalDebt ?? 0) <= 0) {
             return 0;
@@ -303,18 +325,30 @@ class Passenger
         if ($this->creditRequests) {
             foreach ($this->creditRequests as $credit) {
                 $status = strtoupper(trim((string)$credit->getStatus()));
-                if (in_array($status, ['APPROVED', 'VALIDE', 'VALIDATED'])) {
+                if (in_array($status, ['APPROVED', 'VALIDE', 'VALIDATED']) && $credit->getRepaymentStatus() !== 'FULLY_REIMBURSED') {
                     $toRepay = method_exists($credit, 'getAmountToRepay') ? $credit->getAmountToRepay() : ($credit->getAmountRequested() ?: $credit->getTotalAmount());
                     $rem = max(0, (int)$toRepay - (int)$credit->getRepaidAmount());
                     if ($rem > 0) {
-                        $startDate = $credit->getCreatedAt() ?? $credit->getTravelDate();
-                        if ($startDate) {
-                            $dueDate = (clone $startDate)->modify("+{$delaiDays} days");
-                            if ($now > $dueDate) {
-                                $diff = (int)$now->diff($dueDate)->format('%a');
-                                if ($diff > $maxOverdueDays) {
-                                    $maxOverdueDays = $diff;
+                        $dueDate = method_exists($credit, 'getRepaymentDueDate') ? $credit->getRepaymentDueDate() : null;
+                        
+                        if (!$dueDate) {
+                            $startDate = $credit->getCreatedAt() ?? $credit->getTravelDate();
+                            if ($startDate) {
+                                // Fallback par défaut si aucune date enregistrée
+                                $defaultDelay = 7;
+                                if ($this->getProfileType() === 'VIP') {
+                                    $defaultDelay = 14;
+                                } elseif ($this->getProfileType() === 'STANDARD') {
+                                    $defaultDelay = 10;
                                 }
+                                $dueDate = (clone $startDate)->modify("+{$defaultDelay} days");
+                            }
+                        }
+
+                        if ($dueDate && $now > $dueDate) {
+                            $diff = (int)$now->diff($dueDate)->format('%a');
+                            if ($diff > $maxOverdueDays) {
+                                $maxOverdueDays = $diff;
                             }
                         }
                     }

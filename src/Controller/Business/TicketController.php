@@ -31,8 +31,16 @@ class TicketController extends AbstractController
         $search = $request->query->get('search');
         $status = $request->query->get('status');
         $company = $request->query->get('company');
+        $page = (int) $request->query->get('page', 1);
+        $limit = (int) $request->query->get('limit', 0);
 
-        $result = $this->ticketManager->getFormattedTicketList($search, $status, $company);
-        return $this->json(['success' => true, 'data' => $result, 'tickets' => $result], 200);
+        $result = $this->ticketManager->getFormattedTicketList($search, $status, $company, $page, $limit);
+        return $this->json([
+            'success' => true, 
+            'data' => $result['data'], 
+            'tickets' => $result['data'],
+            'kpis' => $result['kpis'],
+            'meta' => $result['meta']
+        ], 200);
     }
 }

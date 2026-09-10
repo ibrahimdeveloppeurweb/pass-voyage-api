@@ -101,6 +101,10 @@ class Credit
     private $rejectionReason;
 
     #[Groups(['creditrequest:read', 'credit:read'])]
+    #[ORM\Column(type: 'datetime', nullable: true)]
+    private $repaymentDueDate;
+
+    #[Groups(['creditrequest:read', 'credit:read'])]
     #[ORM\OneToMany(mappedBy: 'creditRequest', targetEntity: Ticket::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $tickets;
 
@@ -160,6 +164,9 @@ class Credit
 
     public function getRepaidAmount(): int { return (int) ($this->repaidAmount ?? 0); }
     public function setRepaidAmount(int $repaidAmount): self { $this->repaidAmount = $repaidAmount; return $this; }
+
+    public function getRepaymentDueDate(): ?\DateTimeInterface { return $this->repaymentDueDate; }
+    public function setRepaymentDueDate(?\DateTimeInterface $repaymentDueDate): self { $this->repaymentDueDate = $repaymentDueDate; return $this; }
 
     public function getAmountToRepay(): int
     {

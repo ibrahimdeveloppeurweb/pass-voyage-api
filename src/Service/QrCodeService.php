@@ -72,6 +72,19 @@ class QrCodeService
         $count = max(1, $creditRequest->getPassengerCount() ?? 1);
         $tickets = [];
 
+        $settingsRepo = $this->em->getRepository(\App\Entity\Extra\GeneralSetting::class);
+        $setting = $settingsRepo->findOneBy([]);
+        $dureeExpirationBillet = $setting ? (int) $setting->getDureeExpirationBillet() : 0;
+
+        $expirationDate = null;
+        if ($creditRequest->getTravelDate()) {
+            $expirationDate = new \DateTime($creditRequest->getTravelDate()->format('Y-m-d H:i:s'));
+            if ($dureeExpirationBillet > 0) {
+                $expirationDate->modify("+$dureeExpirationBillet days");
+            }
+            $expirationDate->setTime(23, 59, 59);
+        }
+
         for ($i = 1; $i <= $count; $i++) {
             $ticket = new Ticket();
             $ticket->setCreditRequest($creditRequest);
@@ -80,9 +93,7 @@ class QrCodeService
             $ticket->setUnitPrice($creditRequest->getUnitPrice() ?? 0);
             $ticket->setStatus('VALIDATED');
             $ticket->setIsUsed(false);
-            if (!$ticket->getUuid()) {
-                $ticket->setUuid(\Ramsey\Uuid\Uuid::uuid4()->toString());
-            }
+            $ticket->setExpirationDate($expirationDate);
 
             // Generate unique ticket number
             $ticketCode = $this->generateTicketCode($creditRequest, $i);

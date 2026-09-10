@@ -81,6 +81,14 @@ class UserManager
             }
         }
 
+        // Assign company if companyUuid is present
+        if (isset($data->companyUuid) && !empty($data->companyUuid)) {
+            $company = $this->em->getRepository(\App\Entity\Business\Company::class)->findOneBy(['uuid' => $data->companyUuid]);
+            if ($company) {
+                $user->setCompany($company);
+            }
+        }
+
         $this->em->persist($user);
         $this->em->flush();
 
@@ -137,6 +145,18 @@ class UserManager
             $role = $this->findRoleByVal($data->role);
             if ($role) {
                 $user->addDroit($role);
+            }
+        }
+
+        // Assign or update company if companyUuid is present
+        if (property_exists($data, 'companyUuid')) {
+            if (empty($data->companyUuid)) {
+                $user->setCompany(null);
+            } else {
+                $company = $this->em->getRepository(\App\Entity\Business\Company::class)->findOneBy(['uuid' => $data->companyUuid]);
+                if ($company) {
+                    $user->setCompany($company);
+                }
             }
         }
 

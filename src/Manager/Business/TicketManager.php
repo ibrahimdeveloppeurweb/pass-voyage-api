@@ -22,7 +22,7 @@ class TicketManager
         $this->qrCodeService = $qrCodeService;
     }
 
-    public function getFormattedTicketList(?string $search = null, ?string $statusFilter = null, ?string $companyFilter = null): array
+    public function getFormattedTicketList(?string $search = null, ?string $statusFilter = null, ?string $companyFilter = null, int $page = 1, int $limit = 0): array
     {
         $filters = [];
         if ($search && trim($search) !== '') {
@@ -40,6 +40,13 @@ class TicketManager
             : $this->ticketRepository->findBy([], ['id' => 'DESC']);
 
         $result = [];
+        $kpis = [
+            'total' => 0,
+            'valides' => 0,
+            'consommes' => 0,
+            'refuses' => 0,
+            'annules' => 0
+        ];
 
         foreach ($tickets as $t) {
             $credit = null;
@@ -92,14 +99,26 @@ class TicketManager
                 } catch (\Throwable $e) {}
             }
 
+            $isDynamicallyExpired = false;
+            $expirationDate = '-';
+            try {
+                if (method_exists($t, 'getExpirationDate') && $t->getExpirationDate()) {
+                    $expirationDate = $t->getExpirationDate()->format('Y-m-d H:i');
+                    if ($t->getExpirationDate() < new \DateTime()) {
+                        $isDynamicallyExpired = true;
+                    }
+                }
+            } catch (\Throwable $e) {}
+
+
             $qrStatus = 'Valide';
             $statusUpper = strtoupper((string)$t->getStatus());
             if (in_array($statusUpper, ['REFUSED', 'REJECTED', 'REFUSE'])) {
                 $qrStatus = 'Refusé';
             } elseif ($t->getIsUsed() || in_array($statusUpper, ['USED', 'SCANNED', 'SCANNE', 'CONSOMME'])) {
-                $qrStatus = 'Scanné';
-            } elseif (in_array($statusUpper, ['EXPIRED', 'EXPIRE'])) {
-                $qrStatus = 'Expiré';
+                $qrStatus = 'SCANNED';
+            } elseif ($isDynamicallyExpired || in_array($statusUpper, ['EXPIRED', 'EXPIRE'])) {
+                $qrStatus = 'EXPIRED';
             } elseif (in_array($statusUpper, ['CANCELLED', 'ANNULE'])) {
                 $qrStatus = 'Annulé';
             }
@@ -163,6 +182,19 @@ class TicketManager
                 }
             } catch (\Throwable $e) {}
 
+            // KPI Aggregation
+            $kpis['total']++;
+            $stUpper = strtoupper((string)$qrStatus);
+            if ($stUpper === 'VALIDE') {
+                $kpis['valides']++;
+            } elseif ($stUpper === 'SCANNED') {
+                $kpis['consommes']++;
+            } elseif ($stUpper === 'REFUSÉ') {
+                $kpis['refuses']++;
+            } elseif (in_array($stUpper, ['ANNULÉ', 'EXPIRED'])) {
+                $kpis['annules']++;
+            }
+
             $result[] = [
                 'id' => $t->getId(),
                 'num' => $num,
@@ -170,6 +202,7 @@ class TicketManager
                 'compagnie' => $companyName,
                 'trajet' => $trajet,
                 'dateValidite' => $dateValidite,
+                'expirationDate' => $expirationDate,
                 'qrStatus' => $qrStatus,
                 'qrCodeContent' => $qrContent,
                 'unitPrice' => $t->getUnitPrice(),
@@ -181,9 +214,25 @@ class TicketManager
                 'validatedAtStation' => $stationInfo,
                 'validatedAtStationName' => $stationDisplayName,
                 'validatedAt' => $t->getValidatedAt() ? $t->getValidatedAt()->format('d/m/Y H:i') : null,
+                'passengerPhoto' => method_exists($t, 'getPassengerPhoto') ? $t->getPassengerPhoto() : null,
+                'verificationContact' => method_exists($t, 'getVerificationContact') ? $t->getVerificationContact() : null,
             ];
         }
 
-        return $result;
+        $totalItems = count($result);
+        if ($limit > 0) {
+            $offset = ($page - 1) * $limit;
+            $result = array_slice($result, $offset, $limit);
+        }
+
+        return [
+            'data' => $result,
+            'kpis' => $kpis,
+            'meta' => [
+                'total' => $totalItems,
+                'current_page' => $page,
+                'per_page' => $limit > 0 ? $limit : $totalItems,
+            ]
+        ];
     }
 }

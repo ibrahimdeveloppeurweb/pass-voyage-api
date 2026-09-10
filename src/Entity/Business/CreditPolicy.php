@@ -46,23 +46,109 @@ class CreditPolicy
     #[ORM\Column(type: 'boolean')]
     private $autoRejectBlacklistEnabled = true;
 
-    public function getId(): ?int { return $this->id; }
+    #[Groups(['creditpolicy:read'])]
+    #[ORM\Column(type: 'integer')]
+    private $newUserDelay = 0;
 
-    public function getNewUserLimit(): ?int { return $this->newUserLimit; }
-    public function setNewUserLimit(int $newUserLimit): self { $this->newUserLimit = $newUserLimit; return $this; }
+    #[Groups(['creditpolicy:read'])]
+    #[ORM\Column(type: 'integer')]
+    private $standardDelay = 0;
 
-    public function getStandardLimit(): ?int { return $this->standardLimit; }
-    public function setStandardLimit(int $standardLimit): self { $this->standardLimit = $standardLimit; return $this; }
+    #[Groups(['creditpolicy:read'])]
+    #[ORM\Column(type: 'integer')]
+    private $vipDelay = 0;
 
-    public function getVipLimit(): ?int { return $this->vipLimit; }
-    public function setVipLimit(int $vipLimit): self { $this->vipLimit = $vipLimit; return $this; }
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
 
-    public function getAutoApproveEnabled(): ?bool { return $this->autoApproveEnabled; }
-    public function setAutoApproveEnabled(bool $autoApproveEnabled): self { $this->autoApproveEnabled = $autoApproveEnabled; return $this; }
+    public function getNewUserLimit(): ?int
+    {
+        return $this->newUserLimit;
+    }
+    public function setNewUserLimit(int $newUserLimit): self
+    {
+        $this->newUserLimit = $newUserLimit;
+        return $this;
+    }
 
-    public function getAutoRejectBlacklistEnabled(): ?bool { return $this->autoRejectBlacklistEnabled; }
-    public function setAutoRejectBlacklistEnabled(bool $autoRejectBlacklistEnabled): self { $this->autoRejectBlacklistEnabled = $autoRejectBlacklistEnabled; return $this; }
+    public function getStandardLimit(): ?int
+    {
+        return $this->standardLimit;
+    }
+    public function setStandardLimit(int $standardLimit): self
+    {
+        $this->standardLimit = $standardLimit;
+        return $this;
+    }
 
-    public function getTitle(): string { return "Politique de Crédit Voyage"; }
-    public function getDetail(): string { return sprintf("Plafonds: %d / %d / %d", $this->newUserLimit, $this->standardLimit, $this->vipLimit); }
+    public function getVipLimit(): ?int
+    {
+        return $this->vipLimit;
+    }
+    public function setVipLimit(int $vipLimit): self
+    {
+        $this->vipLimit = $vipLimit;
+        return $this;
+    }
+
+    public function getAutoApproveEnabled(): ?bool
+    {
+        return $this->autoApproveEnabled;
+    }
+    public function setAutoApproveEnabled(bool $autoApproveEnabled): self
+    {
+        $this->autoApproveEnabled = $autoApproveEnabled;
+        return $this;
+    }
+
+    public function getAutoRejectBlacklistEnabled(): ?bool
+    {
+        return $this->autoRejectBlacklistEnabled;
+    }
+    public function setAutoRejectBlacklistEnabled(bool $autoRejectBlacklistEnabled): self
+    {
+        $this->autoRejectBlacklistEnabled = $autoRejectBlacklistEnabled;
+        return $this;
+    }
+
+    public function getNewUserDelay(): ?int
+    {
+        return $this->newUserDelay;
+    }
+    public function setNewUserDelay(int $newUserDelay): self
+    {
+        $this->newUserDelay = $newUserDelay;
+        return $this;
+    }
+
+    public function getStandardDelay(): ?int
+    {
+        return $this->standardDelay;
+    }
+    public function setStandardDelay(int $standardDelay): self
+    {
+        $this->standardDelay = $standardDelay;
+        return $this;
+    }
+
+    public function getVipDelay(): ?int
+    {
+        return $this->vipDelay;
+    }
+    public function setVipDelay(int $vipDelay): self
+    {
+        $this->vipDelay = $vipDelay;
+        return $this;
+    }
+
+    public function getTitle(): string
+    {
+        return "Politique de Crédit Voyage";
+    }
+    public function getDetail(): string
+    {
+        return sprintf("Plafonds: %d / %d / %d", $this->newUserLimit, $this->standardLimit, $this->vipLimit);
+    }
 }

@@ -33,6 +33,11 @@ class GeneralSetting
     private $delaiOptionStandard = 14;
 
     #[Groups(['setting'])]
+    #[ORM\Column(type: 'integer', nullable: true)]
+    private $dureeExpirationBillet = 0;
+
+
+    #[Groups(['setting'])]
     #[ORM\Column(type: 'string', length: 255, nullable: true)]
     private $reserveFinanciereInitiale = '10 000 000';
 
@@ -67,6 +72,10 @@ class GeneralSetting
 
     public function getDelaiOptionStandard(): ?int { return $this->delaiOptionStandard; }
     public function setDelaiOptionStandard(?int $delaiOptionStandard): self { $this->delaiOptionStandard = $delaiOptionStandard; return $this; }
+
+    public function getDureeExpirationBillet(): ?int { return $this->dureeExpirationBillet; }
+    public function setDureeExpirationBillet(?int $dureeExpirationBillet): self { $this->dureeExpirationBillet = $dureeExpirationBillet; return $this; }
+
 
     public function getReserveFinanciereInitiale(): ?string { return $this->reserveFinanciereInitiale; }
     public function setReserveFinanciereInitiale(?string $reserveFinanciereInitiale): self { $this->reserveFinanciereInitiale = $reserveFinanciereInitiale; return $this; }

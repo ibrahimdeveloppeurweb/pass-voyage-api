@@ -76,7 +76,7 @@ class PublicRegistrationController extends AbstractController
         }
 
         $otpCode = (string) rand(1000, 9999);
-        $expiresAt = new \DateTime('+10 minutes');
+        $expiresAt = new \DateTime('+2 minutes');
 
         $userOtp = $this->userOtpRepository->findOneBy(['phone' => $phone]);
         if (!$userOtp) {

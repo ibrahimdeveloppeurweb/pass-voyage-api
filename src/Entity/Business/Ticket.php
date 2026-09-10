@@ -65,11 +65,24 @@ class Ticket
 
     #[Groups(['ticket:read', 'creditrequest:read'])]
     #[ORM\Column(type: 'datetime', nullable: true)]
+    private $expirationDate;
+
+
+    #[Groups(['ticket:read', 'creditrequest:read'])]
+    #[ORM\Column(type: 'datetime', nullable: true)]
     private $validatedAt;
 
     #[Groups(['ticket:read', 'creditrequest:read'])]
     #[ORM\Column(type: 'datetime', nullable: true)]
     private $usedAt;
+    
+    #[Groups(['ticket:read', 'creditrequest:read'])]
+    #[ORM\Column(type: 'string', length: 255, nullable: true)]
+    private $passengerPhoto;
+
+    #[Groups(['ticket:read', 'creditrequest:read'])]
+    #[ORM\Column(type: 'string', length: 50, nullable: true)]
+    private $verificationContact;
 
     #[Groups(['ticket:read', 'creditrequest:read'])]
     #[ORM\Column(type: 'string', length: 50, nullable: true)]
@@ -122,6 +135,10 @@ class Ticket
     public function getIsUsed(): ?bool { return $this->isUsed; }
     public function setIsUsed(bool $isUsed): self { $this->isUsed = $isUsed; return $this; }
 
+    public function getExpirationDate(): ?\DateTimeInterface { return $this->expirationDate; }
+    public function setExpirationDate(?\DateTimeInterface $expirationDate): self { $this->expirationDate = $expirationDate; return $this; }
+
+
     public function getValidatedAt(): ?\DateTimeInterface { return $this->validatedAt; }
     public function setValidatedAt(?\DateTimeInterface $validatedAt): self { $this->validatedAt = $validatedAt; return $this; }
 
@@ -130,6 +147,12 @@ class Ticket
 
     public function getDepartureTime(): ?string { return $this->departureTime; }
     public function setDepartureTime(?string $departureTime): self { $this->departureTime = $departureTime; return $this; }
+
+    public function getPassengerPhoto(): ?string { return $this->passengerPhoto; }
+    public function setPassengerPhoto(?string $passengerPhoto): self { $this->passengerPhoto = $passengerPhoto; return $this; }
+
+    public function getVerificationContact(): ?string { return $this->verificationContact; }
+    public function setVerificationContact(?string $verificationContact): self { $this->verificationContact = $verificationContact; return $this; }
 
     public function getPhysicalTicketNumber(): ?string { return $this->physicalTicketNumber; }
     public function setPhysicalTicketNumber(?string $physicalTicketNumber): self { $this->physicalTicketNumber = $physicalTicketNumber; return $this; }

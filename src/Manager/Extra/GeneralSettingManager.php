@@ -44,6 +44,7 @@ class GeneralSettingManager
             'delaiGracePenalite' => $setting->getDelaiGracePenalite(),
             'dureeContratDefautMois' => $setting->getDureeContratDefautMois(),
             'apportInitialPourcentage' => $setting->getApportInitialPourcentage(),
+            'dureeExpirationBillet' => $setting->getDureeExpirationBillet(),
         ];
 
         if (isset($data->fraisServiceTicket)) {
@@ -82,6 +83,10 @@ class GeneralSettingManager
             $setting->setApportInitialPourcentage((float)$data->apportInitialPourcentage);
         }
 
+        if (isset($data->dureeExpirationBillet)) {
+            $setting->setDureeExpirationBillet((int)$data->dureeExpirationBillet);
+        }
+
         $this->em->persist($setting);
 
         // Record History
@@ -103,6 +108,7 @@ class GeneralSettingManager
             'delaiGracePenalite' => $setting->getDelaiGracePenalite(),
             'dureeContratDefautMois' => $setting->getDureeContratDefautMois(),
             'apportInitialPourcentage' => $setting->getApportInitialPourcentage(),
+            'dureeExpirationBillet' => $setting->getDureeExpirationBillet(),
         ]);
 
         $this->em->persist($history);

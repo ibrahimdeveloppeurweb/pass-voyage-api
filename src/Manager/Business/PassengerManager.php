@@ -316,6 +316,10 @@ class PassengerManager
             }
         }
 
+        if (isset($data->avalPhone)) {
+            $passenger->setAvalPhone($data->avalPhone);
+        }
+
         $passenger->setIdentityStatus('PENDING');
 
         try {
@@ -341,7 +345,11 @@ class PassengerManager
         if ($statusUpper === 'VERIFIED' || $statusUpper === 'VALIDATED') {
             $passenger->setIdentityStatus('VERIFIED');
             $passenger->setIsIdentified(true);
-            $passenger->setProfileType('STANDARD');
+            // Le scoring system gère les promotions automatiquement — on ne force plus STANDARD ici.
+            // Un nouveau passager validé commence toujours en NEW_USER.
+            if ($passenger->getProfileType() !== 'STANDARD' && $passenger->getProfileType() !== 'VIP') {
+                $passenger->setProfileType('NEW_USER');
+            }
             if (!$passenger->getMaxCreditLimit()) {
                 $passenger->setMaxCreditLimit(200000);
             }
@@ -510,6 +518,8 @@ class PassengerManager
                 'status' => 'success',
                 'availableCredit' => 0,
                 'formattedCredit' => '0',
+                'serviceFeeWallet' => 0,
+                'formattedServiceFeeWallet' => '0',
                 'recentActivities' => []
             ];
         }
@@ -649,20 +659,27 @@ class PassengerManager
 
         $recentActivities = array_slice($recentActivities, 0, 6);
 
+        $settingsRepo = $this->em->getRepository(\App\Entity\Extra\GeneralSetting::class);
+        $setting = $settingsRepo->findOneBy([]);
+        $serviceFee = $setting ? (int)$setting->getFraisServiceTicket() : 600;
+
         return [
             'status' => 'success',
             'totalDebt' => $totalDebt,
-            'availableCredit' => $totalDebt,
+            'availableCredit' => $availableCreditLimit,
             'creditLimit' => $availableCreditLimit,
             'maxCreditLimit' => $maxLimit,
             'formattedCredit' => number_format($totalDebt, 0, ',', '.'),
             'formattedCreditLimit' => number_format($availableCreditLimit, 0, ',', '.'),
+            'serviceFeeWallet' => $passenger->getServiceFeeWallet(),
+            'formattedServiceFeeWallet' => number_format($passenger->getServiceFeeWallet() ?? 0, 0, ',', '.'),
             'identityStatus' => $passenger->getIdentityStatus(),
             'isIdentified' => $passenger->getIsIdentified() ?? ($passenger->getIdentityStatus() === 'VERIFIED'),
             'isBlacklisted' => $passenger->getIsBlacklisted() ?? false,
             'isBlocked' => $passenger->getIsBlacklisted() ?? false,
             'passenger' => $passenger,
             'recentActivities' => $recentActivities,
+            'serviceFee' => $serviceFee,
         ];
     }
 
@@ -966,11 +983,16 @@ class PassengerManager
             ];
         }, $activeTariffs);
 
+        $settingsRepo = $this->em->getRepository(\App\Entity\Extra\GeneralSetting::class);
+        $setting = $settingsRepo->findOneBy([]);
+        $serviceFee = $setting ? (int)$setting->getFraisServiceTicket() : 600;
+
         return [
             'companies' => $companiesData,
             'cities' => $citiesList,
             'routes' => $routesData,
             'tariffs' => $tariffsData,
+            'serviceFee' => $serviceFee,
         ];
     }
 
@@ -1065,6 +1087,79 @@ class PassengerManager
                 $cr->setRepaidAmount($amountToRepay);
                 $cr->setRepaymentStatus('FULLY_REIMBURSED');
                 $remainingPayment -= $needed;
+
+                // === LOGIQUE DU BON PAYEUR (Mobile) ===
+                $now = new \DateTime();
+
+                if (method_exists($cr, 'getRepaymentDueDate') && $cr->getRepaymentDueDate()) {
+                    $dueDate = clone $cr->getRepaymentDueDate();
+                } else {
+                    $startDate = clone ($cr->getCreatedAt() ?? $cr->getTravelDate() ?? new \DateTime());
+
+                    // Récupérer les délais depuis la CreditPolicy
+                    $creditPolicyRepo = $this->em->getRepository(\App\Entity\Business\CreditPolicy::class);
+                    $policy = $creditPolicyRepo->findOneBy([]) ?? null;
+                    $delaiAccorde = 0;
+                    if ($policy) {
+                        $profileType = $passenger->getProfileType();
+                        if ($profileType === 'VIP' && method_exists($policy, 'getVipDelay')) {
+                            $delaiAccorde = (int) $policy->getVipDelay();
+                        } elseif ($profileType === 'STANDARD' && method_exists($policy, 'getStandardDelay')) {
+                            $delaiAccorde = (int) $policy->getStandardDelay();
+                        } elseif (method_exists($policy, 'getNewUserDelay')) {
+                            $delaiAccorde = (int) $policy->getNewUserDelay();
+                        }
+                    }
+
+                    $dueDate = clone $startDate;
+                    if ($dueDate instanceof \DateTime) {
+                        $dueDate->modify("+{$delaiAccorde} days");
+                    }
+                }
+
+                if ($now <= $dueDate) {
+                    // À L'HEURE → +1 point
+                    $c = $passenger->getConsecutiveGoodRepayments() ?? 0;
+                    $passenger->setConsecutiveGoodRepayments($c + 1);
+
+                    // Promotion selon le score cumulé
+                    $score = $passenger->getConsecutiveGoodRepayments();
+                    if ($score >= 10) {
+                        $passenger->setProfileType('VIP');
+                        if ($policy && method_exists($policy, 'getVipLimit')) {
+                            $passenger->setMaxCreditLimit($policy->getVipLimit());
+                        }
+                    } elseif ($score >= 3) {
+                        $passenger->setProfileType('STANDARD');
+                        if ($policy && method_exists($policy, 'getStandardLimit')) {
+                            $passenger->setMaxCreditLimit($policy->getStandardLimit());
+                        }
+                    } else {
+                        $passenger->setProfileType('NEW_USER');
+                        if ($policy && method_exists($policy, 'getNewUserLimit')) {
+                            $passenger->setMaxCreditLimit($policy->getNewUserLimit());
+                        }
+                    }
+                } else {
+                    // EN RETARD → rétrogradation progressive (Option A)
+                    $passenger->setConsecutiveGoodRepayments(0);
+                    $currentProfile = $passenger->getProfileType();
+                    if ($currentProfile === 'VIP') {
+                        // VIP → STANDARD (un cran en dessous)
+                        $passenger->setProfileType('STANDARD');
+                        if ($policy && method_exists($policy, 'getStandardLimit')) {
+                            $passenger->setMaxCreditLimit($policy->getStandardLimit());
+                        }
+                    } else {
+                        // STANDARD ou NEW_USER → NEW_USER
+                        $passenger->setProfileType('NEW_USER');
+                        if ($policy && method_exists($policy, 'getNewUserLimit')) {
+                            $passenger->setMaxCreditLimit($policy->getNewUserLimit());
+                        }
+                    }
+                }
+                // === FIN LOGIQUE DU BON PAYEUR ===
+
             } else {
                 $cr->setRepaidAmount($alreadyRepaid + $remainingPayment);
                 $cr->setRepaymentStatus('PARTIALLY_REIMBURSED');
@@ -1403,6 +1498,7 @@ class PassengerManager
                 'lastname' => $p->getLastname(),
                 'phoneNumber' => $p->getPhoneNumber(),
                 'countryCode' => $p->getCountryCode(),
+                'avalPhone' => $p->getAvalPhone(),
                 'gender' => $p->getGender(),
                 'residenceAddress' => $p->getResidenceAddress(),
                 'email' => $p->getEmail(),
@@ -1418,6 +1514,7 @@ class PassengerManager
                 'availableCredit' => $p->getAvailableCredit(),
                 'totalDebt' => $p->getTotalDebt(),
                 'totalReimbursed' => $p->getTotalReimbursed(),
+                'serviceFeeWallet' => $p->getServiceFeeWallet(),
                 'isIdentified' => $p->getIsIdentified(),
                 'isBlacklisted' => $p->getIsBlacklisted(),
                 'code' => $p->getCode(),

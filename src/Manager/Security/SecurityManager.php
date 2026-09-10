@@ -184,6 +184,8 @@ class SecurityManager
             'role' => $this->roles,
             'isFirstUser' => $this->isFirstUser,
             'uuid' => $user->getUuid() ?? null,
+            'companyUuid' => method_exists($user, 'getCompany') && $user->getCompany() ? $user->getCompany()->getUuid() : null,
+            'companyName' => method_exists($user, 'getCompany') && $user->getCompany() ? $user->getCompany()->getName() : null,
             'permissions' => $user->getPermissions(),
             'token' => $token,
         ];

@@ -78,6 +78,26 @@ class MenuData
                     ['label' => 'Rôles & Permissions', 'link' => '/passe-voyage/administration/roles', 'nom' => 'MENU_ADMINISTRATION_ROLES'],
                     ['label' => 'Paramètres Globaux', 'link' => '/passe-voyage/administration/settings', 'nom' => 'MENU_ADMINISTRATION_SETTINGS']
                 ]
+            ],
+            [
+                'label' => 'Mon Tableau de bord (Compagnie)',
+                'link' => '/espace-compagnie/dashboard',
+                'nom' => 'MENU_COMPAGNIE_DASHBOARD'
+            ],
+            [
+                'label' => 'Activités & Gares',
+                'link' => '/espace-compagnie/activites-gares',
+                'nom' => 'MENU_COMPAGNIE_ACTIVITES_GARES'
+            ],
+            [
+                'label' => 'Billets Scannés',
+                'link' => '/espace-compagnie/billets-scannes',
+                'nom' => 'MENU_COMPAGNIE_BILLETS_SCANNES'
+            ],
+            [
+                'label' => 'Solde & Finances',
+                'link' => '/espace-compagnie/finances',
+                'nom' => 'MENU_COMPAGNIE_FINANCES'
             ]
         ];
     }

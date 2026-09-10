@@ -28,6 +28,8 @@ return [
         '/api/private/agent/new' => [[['_route' => 'new_agent', '_controller' => 'App\\Controller\\Business\\AgentController::new'], null, ['POST' => 0], null, false, false, null]],
         '/api/private/agent/dashboard' => [[['_route' => 'get_agent_dashboard', '_controller' => 'App\\Controller\\Business\\AgentController::getDashboard'], null, ['GET' => 0, 'POST' => 1], null, false, false, null]],
         '/api/private/agent/ticket/verify' => [[['_route' => 'verify_agent_ticket', '_controller' => 'App\\Controller\\Business\\AgentController::verifyTicket'], null, ['POST' => 0], null, false, false, null]],
+        '/api/private/agent/ticket/send-otp' => [[['_route' => 'agent_send_otp', '_controller' => 'App\\Controller\\Business\\AgentController::sendOtp'], null, ['POST' => 0], null, false, false, null]],
+        '/api/private/agent/ticket/verify-otp' => [[['_route' => 'agent_verify_otp', '_controller' => 'App\\Controller\\Business\\AgentController::verifyOtp'], null, ['POST' => 0], null, false, false, null]],
         '/api/private/agent/ticket/scan' => [[['_route' => 'scan_agent_ticket', '_controller' => 'App\\Controller\\Business\\AgentController::scanTicket'], null, ['POST' => 0], null, false, false, null]],
         '/api/private/agent/scans/history' => [[['_route' => 'get_agent_scan_history', '_controller' => 'App\\Controller\\Business\\AgentController::getScanHistory'], null, ['GET' => 0, 'POST' => 1], null, false, false, null]],
         '/api/private/agent/notifications' => [[['_route' => 'get_agent_notifications', '_controller' => 'App\\Controller\\Business\\AgentController::getNotifications'], null, ['GET' => 0, 'POST' => 1], null, false, false, null]],
@@ -41,6 +43,10 @@ return [
         ],
         '/api/private/company/show' => [[['_route' => 'show_company_private', '_controller' => 'App\\Controller\\Business\\CompanyController::show'], null, ['GET' => 0], null, false, false, null]],
         '/api/private/company/new' => [[['_route' => 'new_company_private', '_controller' => 'App\\Controller\\Business\\CompanyController::new'], null, ['POST' => 0], null, false, false, null]],
+        '/api/private/company/espace/dashboard' => [[['_route' => 'company_espace_dashboard', '_controller' => 'App\\Controller\\Business\\CompanyController::espaceDashboard'], null, ['GET' => 0], null, false, false, null]],
+        '/api/private/company/espace/activites-gares' => [[['_route' => 'company_espace_activites_gares', '_controller' => 'App\\Controller\\Business\\CompanyController::espaceActivitesGares'], null, ['GET' => 0], null, false, false, null]],
+        '/api/private/company/espace/billets-scannes' => [[['_route' => 'company_espace_billets_scannes', '_controller' => 'App\\Controller\\Business\\CompanyController::espaceBilletsScannes'], null, ['GET' => 0], null, false, false, null]],
+        '/api/private/company/espace/finances' => [[['_route' => 'company_espace_finances', '_controller' => 'App\\Controller\\Business\\CompanyController::espaceFinances'], null, ['GET' => 0], null, false, false, null]],
         '/api/private/company-fund' => [
             [['_route' => 'index_company_fund_private', '_controller' => 'App\\Controller\\Business\\CompanyFundController::index'], null, ['GET' => 0], null, false, false, null],
             [['_route' => 'index_company_fund_private_slash', '_controller' => 'App\\Controller\\Business\\CompanyFundController::index'], null, ['GET' => 0], null, true, false, null],
@@ -229,132 +235,135 @@ return [
                         .')'
                         .'|c(?'
                             .'|ompany(?'
-                                .'|/([^/]++)/(?'
-                                    .'|edit(*:298)'
-                                    .'|delete(*:312)'
-                                    .'|toggle(*:326)'
+                                .'|/(?'
+                                    .'|([^/]++)/(?'
+                                        .'|edit(*:301)'
+                                        .'|delete(*:315)'
+                                        .'|toggle(*:329)'
+                                    .')'
+                                    .'|espace/activites\\-gares/([^/]++)/stats(*:376)'
                                 .')'
                                 .'|\\-(?'
                                     .'|fund/([^/]++)/(?'
-                                        .'|edit(*:361)'
-                                        .'|delete(*:375)'
-                                        .'|show(*:387)'
-                                        .'|recharge(*:403)'
-                                        .'|history(*:418)'
+                                        .'|edit(*:411)'
+                                        .'|delete(*:425)'
+                                        .'|show(*:437)'
+                                        .'|recharge(*:453)'
+                                        .'|history(*:468)'
                                     .')'
                                     .'|invoice/([^/]++)/(?'
-                                        .'|toggle\\-paid(*:459)'
-                                        .'|delete(*:473)'
+                                        .'|toggle\\-paid(*:509)'
+                                        .'|delete(*:523)'
                                     .')'
                                 .')'
                             .')'
                             .'|redit(?'
                                 .'|/([^/]++)/(?'
                                     .'|show(?'
-                                        .'|(*:512)'
-                                        .'|(*:520)'
+                                        .'|(*:562)'
+                                        .'|(*:570)'
                                     .')'
                                     .'|edit(?'
-                                        .'|(*:536)'
-                                        .'|(*:544)'
+                                        .'|(*:586)'
+                                        .'|(*:594)'
                                     .')'
                                     .'|approve(?'
-                                        .'|(*:563)'
-                                        .'|(*:571)'
+                                        .'|(*:613)'
+                                        .'|(*:621)'
                                     .')'
                                     .'|re(?'
                                         .'|ject(?'
-                                            .'|(*:592)'
-                                            .'|(*:600)'
+                                            .'|(*:642)'
+                                            .'|(*:650)'
                                         .')'
                                         .'|imburse(?'
-                                            .'|(*:619)'
-                                            .'|(*:627)'
+                                            .'|(*:669)'
+                                            .'|(*:677)'
                                         .')'
                                     .')'
                                     .'|delete(?'
-                                        .'|(*:646)'
-                                        .'|(*:654)'
+                                        .'|(*:696)'
+                                        .'|(*:704)'
                                     .')'
                                 .')'
                                 .'|\\-request/([^/]++)/(?'
                                     .'|show(?'
-                                        .'|(*:693)'
-                                        .'|(*:701)'
+                                        .'|(*:743)'
+                                        .'|(*:751)'
                                     .')'
                                     .'|edit(?'
-                                        .'|(*:717)'
-                                        .'|(*:725)'
+                                        .'|(*:767)'
+                                        .'|(*:775)'
                                     .')'
                                     .'|approve(?'
-                                        .'|(*:744)'
-                                        .'|(*:752)'
+                                        .'|(*:794)'
+                                        .'|(*:802)'
                                     .')'
                                     .'|re(?'
                                         .'|ject(?'
-                                            .'|(*:773)'
-                                            .'|(*:781)'
+                                            .'|(*:823)'
+                                            .'|(*:831)'
                                         .')'
                                         .'|imburse(?'
-                                            .'|(*:800)'
-                                            .'|(*:808)'
+                                            .'|(*:850)'
+                                            .'|(*:858)'
                                         .')'
                                     .')'
                                     .'|delete(?'
-                                        .'|(*:827)'
-                                        .'|(*:835)'
+                                        .'|(*:877)'
+                                        .'|(*:885)'
                                     .')'
                                 .')'
                             .')'
                         .')'
                         .'|passenger/([^/]++)/(?'
-                            .'|show(*:873)'
-                            .'|edit(*:885)'
-                            .'|verify\\-kyc(*:904)'
-                            .'|delete(*:918)'
-                            .'|toggle\\-blacklist(*:943)'
+                            .'|show(*:923)'
+                            .'|edit(*:935)'
+                            .'|verify\\-kyc(*:954)'
+                            .'|delete(*:968)'
+                            .'|toggle\\-blacklist(*:993)'
                         .')'
                         .'|route/([^/]++)/(?'
-                            .'|edit(*:974)'
-                            .'|delete(*:988)'
-                            .'|toggle(*:1002)'
+                            .'|edit(*:1024)'
+                            .'|delete(*:1039)'
+                            .'|toggle(*:1054)'
                         .')'
                         .'|station/([^/]++)/(?'
-                            .'|edit(*:1036)'
-                            .'|delete(*:1051)'
-                            .'|toggle(*:1066)'
+                            .'|edit(*:1088)'
+                            .'|delete(*:1103)'
+                            .'|toggle(*:1118)'
                         .')'
                         .'|tariff/([^/]++)/(?'
-                            .'|edit(*:1099)'
-                            .'|delete(*:1114)'
+                            .'|edit(*:1151)'
+                            .'|delete(*:1166)'
                         .')'
                     .')'
                     .'|credit/([^/]++)/(?'
                         .'|show(?'
-                            .'|(*:1151)'
-                            .'|(*:1160)'
+                            .'|(*:1203)'
+                            .'|(*:1212)'
                         .')'
                         .'|edit(?'
-                            .'|(*:1177)'
-                            .'|(*:1186)'
+                            .'|(*:1229)'
+                            .'|(*:1238)'
                         .')'
                         .'|approve(?'
-                            .'|(*:1206)'
-                            .'|(*:1215)'
+                            .'|(*:1258)'
+                            .'|(*:1267)'
                         .')'
                         .'|re(?'
                             .'|ject(?'
-                                .'|(*:1237)'
-                                .'|(*:1246)'
+                                .'|(*:1289)'
+                                .'|(*:1298)'
                             .')'
                             .'|imburse(?'
-                                .'|(*:1266)'
-                                .'|(*:1275)'
+                                .'|(*:1318)'
+                                .'|(*:1327)'
                             .')'
                         .')'
                         .'|delete(?'
-                            .'|(*:1295)'
-                            .'|(*:1304)'
+                            .'|(*:1347)'
+                            .'|(*:1356)'
                         .')'
                     .')'
                 .')'
@@ -372,65 +381,66 @@ return [
         222 => [[['_route' => 'assign_agent', '_controller' => 'App\\Controller\\Business\\AgentController::assign'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
         244 => [[['_route' => 'toggle_status_agent', '_controller' => 'App\\Controller\\Business\\AgentController::toggleStatus'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
         258 => [[['_route' => 'delete_agent', '_controller' => 'App\\Controller\\Business\\AgentController::delete'], ['uuid'], ['DELETE' => 0], null, false, false, null]],
-        298 => [[['_route' => 'edit_company_private', '_controller' => 'App\\Controller\\Business\\CompanyController::edit'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        312 => [[['_route' => 'delete_company_private', '_controller' => 'App\\Controller\\Business\\CompanyController::delete'], ['uuid'], ['DELETE' => 0, 'POST' => 1], null, false, false, null]],
-        326 => [[['_route' => 'toggle_company_private', '_controller' => 'App\\Controller\\Business\\CompanyController::toggle'], ['uuid'], ['PATCH' => 0, 'POST' => 1], null, false, false, null]],
-        361 => [[['_route' => 'edit_company_fund_private', '_controller' => 'App\\Controller\\Business\\CompanyFundController::edit'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        375 => [[['_route' => 'delete_company_fund_private', '_controller' => 'App\\Controller\\Business\\CompanyFundController::delete'], ['uuid'], ['DELETE' => 0, 'POST' => 1], null, false, false, null]],
-        387 => [[['_route' => 'show_company_fund_private', '_controller' => 'App\\Controller\\Business\\CompanyFundController::show'], ['uuid'], ['GET' => 0], null, false, false, null]],
-        403 => [[['_route' => 'recharge_company_fund_private', '_controller' => 'App\\Controller\\Business\\CompanyFundController::recharge'], ['uuid'], ['POST' => 0], null, false, false, null]],
-        418 => [[['_route' => 'history_company_fund_private', '_controller' => 'App\\Controller\\Business\\CompanyFundController::history'], ['uuid'], ['GET' => 0, 'POST' => 1], null, false, false, null]],
-        459 => [[['_route' => 'toggle_paid_company_invoice_private', '_controller' => 'App\\Controller\\Business\\CompanyInvoiceController::togglePaid'], ['uuid'], ['PATCH' => 0, 'POST' => 1], null, false, false, null]],
-        473 => [[['_route' => 'delete_company_invoice_private', '_controller' => 'App\\Controller\\Business\\CompanyInvoiceController::delete'], ['uuid'], ['DELETE' => 0, 'POST' => 1], null, false, false, null]],
-        512 => [[['_route' => 'show_credit', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::show'], ['uuid'], ['GET' => 0], null, false, false, null]],
-        520 => [[['_route' => 'show_credit_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::show'], ['id'], ['GET' => 0], null, false, false, null]],
-        536 => [[['_route' => 'edit_credit', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::edit'], ['uuid'], ['PUT' => 0, 'POST' => 1], null, false, false, null]],
-        544 => [[['_route' => 'edit_credit_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::edit'], ['id'], ['PUT' => 0, 'POST' => 1], null, false, false, null]],
-        563 => [[['_route' => 'approve_credit', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::approve'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        571 => [[['_route' => 'approve_credit_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::approve'], ['id'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        592 => [[['_route' => 'reject_credit', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reject'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        600 => [[['_route' => 'reject_credit_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reject'], ['id'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        619 => [[['_route' => 'reimburse_credit', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reimburse'], ['uuid'], ['POST' => 0], null, false, false, null]],
-        627 => [[['_route' => 'reimburse_credit_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reimburse'], ['id'], ['POST' => 0], null, false, false, null]],
-        646 => [[['_route' => 'delete_credit', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::delete'], ['uuid'], ['DELETE' => 0], null, false, false, null]],
-        654 => [[['_route' => 'delete_credit_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::delete'], ['id'], ['DELETE' => 0], null, false, false, null]],
-        693 => [[['_route' => 'show_credit_request', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::show'], ['uuid'], ['GET' => 0], null, false, false, null]],
-        701 => [[['_route' => 'show_credit_request_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::show'], ['id'], ['GET' => 0], null, false, false, null]],
-        717 => [[['_route' => 'edit_credit_request', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::edit'], ['uuid'], ['PUT' => 0, 'POST' => 1], null, false, false, null]],
-        725 => [[['_route' => 'edit_credit_request_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::edit'], ['id'], ['PUT' => 0, 'POST' => 1], null, false, false, null]],
-        744 => [[['_route' => 'approve_credit_request', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::approve'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        752 => [[['_route' => 'approve_credit_request_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::approve'], ['id'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        773 => [[['_route' => 'reject_credit_request', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reject'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        781 => [[['_route' => 'reject_credit_request_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reject'], ['id'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        800 => [[['_route' => 'reimburse_credit_request', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reimburse'], ['uuid'], ['POST' => 0], null, false, false, null]],
-        808 => [[['_route' => 'reimburse_credit_request_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reimburse'], ['id'], ['POST' => 0], null, false, false, null]],
-        827 => [[['_route' => 'delete_credit_request', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::delete'], ['uuid'], ['DELETE' => 0], null, false, false, null]],
-        835 => [[['_route' => 'delete_credit_request_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::delete'], ['id'], ['DELETE' => 0], null, false, false, null]],
-        873 => [[['_route' => 'show_passenger', '_controller' => 'App\\Controller\\Business\\PassengerController::show'], ['uuid'], ['GET' => 0], null, false, false, null]],
-        885 => [[['_route' => 'edit_passenger', '_controller' => 'App\\Controller\\Business\\PassengerController::edit'], ['uuid'], ['PUT' => 0, 'POST' => 1], null, false, false, null]],
-        904 => [[['_route' => 'verify_kyc_passenger', '_controller' => 'App\\Controller\\Business\\PassengerController::verifyKyc'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        918 => [[['_route' => 'delete_passenger', '_controller' => 'App\\Controller\\Business\\PassengerController::delete'], ['uuid'], ['DELETE' => 0, 'POST' => 1], null, false, false, null]],
-        943 => [[['_route' => 'toggle_blacklist_passenger', '_controller' => 'App\\Controller\\Business\\PassengerController::toggleBlacklist'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        974 => [[['_route' => 'edit_route_private', '_controller' => 'App\\Controller\\Business\\RouteController::edit'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        988 => [[['_route' => 'delete_route_private', '_controller' => 'App\\Controller\\Business\\RouteController::delete'], ['uuid'], ['DELETE' => 0, 'POST' => 1], null, false, false, null]],
-        1002 => [[['_route' => 'toggle_route_private', '_controller' => 'App\\Controller\\Business\\RouteController::toggle'], ['uuid'], ['PATCH' => 0, 'POST' => 1], null, false, false, null]],
-        1036 => [[['_route' => 'edit_station_private', '_controller' => 'App\\Controller\\Business\\StationController::edit'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        1051 => [[['_route' => 'delete_station_private', '_controller' => 'App\\Controller\\Business\\StationController::delete'], ['uuid'], ['DELETE' => 0, 'POST' => 1], null, false, false, null]],
-        1066 => [[['_route' => 'toggle_station_private', '_controller' => 'App\\Controller\\Business\\StationController::toggle'], ['uuid'], ['PATCH' => 0, 'POST' => 1], null, false, false, null]],
-        1099 => [[['_route' => 'edit_tariff_private', '_controller' => 'App\\Controller\\Business\\TariffController::edit'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        1114 => [[['_route' => 'delete_tariff_private', '_controller' => 'App\\Controller\\Business\\TariffController::delete'], ['uuid'], ['DELETE' => 0, 'POST' => 1], null, false, false, null]],
-        1151 => [[['_route' => 'show_credit_pub_uuid', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::show'], ['uuid'], ['GET' => 0], null, false, false, null]],
-        1160 => [[['_route' => 'show_credit_pub_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::show'], ['id'], ['GET' => 0], null, false, false, null]],
-        1177 => [[['_route' => 'edit_credit_pub_uuid', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::edit'], ['uuid'], ['PUT' => 0, 'POST' => 1], null, false, false, null]],
-        1186 => [[['_route' => 'edit_credit_pub_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::edit'], ['id'], ['PUT' => 0, 'POST' => 1], null, false, false, null]],
-        1206 => [[['_route' => 'approve_credit_pub', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::approve'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        1215 => [[['_route' => 'approve_credit_pub_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::approve'], ['id'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        1237 => [[['_route' => 'reject_credit_pub', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reject'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        1246 => [[['_route' => 'reject_credit_pub_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reject'], ['id'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
-        1266 => [[['_route' => 'reimburse_credit_pub_uuid', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reimburse'], ['uuid'], ['POST' => 0], null, false, false, null]],
-        1275 => [[['_route' => 'reimburse_credit_pub_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reimburse'], ['id'], ['POST' => 0], null, false, false, null]],
-        1295 => [[['_route' => 'delete_credit_pub_uuid', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::delete'], ['uuid'], ['DELETE' => 0], null, false, false, null]],
-        1304 => [
+        301 => [[['_route' => 'edit_company_private', '_controller' => 'App\\Controller\\Business\\CompanyController::edit'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        315 => [[['_route' => 'delete_company_private', '_controller' => 'App\\Controller\\Business\\CompanyController::delete'], ['uuid'], ['DELETE' => 0, 'POST' => 1], null, false, false, null]],
+        329 => [[['_route' => 'toggle_company_private', '_controller' => 'App\\Controller\\Business\\CompanyController::toggle'], ['uuid'], ['PATCH' => 0, 'POST' => 1], null, false, false, null]],
+        376 => [[['_route' => 'company_espace_activites_gares_stats', '_controller' => 'App\\Controller\\Business\\CompanyController::espaceActivitesGaresStats'], ['uuid'], ['GET' => 0], null, false, false, null]],
+        411 => [[['_route' => 'edit_company_fund_private', '_controller' => 'App\\Controller\\Business\\CompanyFundController::edit'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        425 => [[['_route' => 'delete_company_fund_private', '_controller' => 'App\\Controller\\Business\\CompanyFundController::delete'], ['uuid'], ['DELETE' => 0, 'POST' => 1], null, false, false, null]],
+        437 => [[['_route' => 'show_company_fund_private', '_controller' => 'App\\Controller\\Business\\CompanyFundController::show'], ['uuid'], ['GET' => 0], null, false, false, null]],
+        453 => [[['_route' => 'recharge_company_fund_private', '_controller' => 'App\\Controller\\Business\\CompanyFundController::recharge'], ['uuid'], ['POST' => 0], null, false, false, null]],
+        468 => [[['_route' => 'history_company_fund_private', '_controller' => 'App\\Controller\\Business\\CompanyFundController::history'], ['uuid'], ['GET' => 0, 'POST' => 1], null, false, false, null]],
+        509 => [[['_route' => 'toggle_paid_company_invoice_private', '_controller' => 'App\\Controller\\Business\\CompanyInvoiceController::togglePaid'], ['uuid'], ['PATCH' => 0, 'POST' => 1], null, false, false, null]],
+        523 => [[['_route' => 'delete_company_invoice_private', '_controller' => 'App\\Controller\\Business\\CompanyInvoiceController::delete'], ['uuid'], ['DELETE' => 0, 'POST' => 1], null, false, false, null]],
+        562 => [[['_route' => 'show_credit', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::show'], ['uuid'], ['GET' => 0], null, false, false, null]],
+        570 => [[['_route' => 'show_credit_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::show'], ['id'], ['GET' => 0], null, false, false, null]],
+        586 => [[['_route' => 'edit_credit', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::edit'], ['uuid'], ['PUT' => 0, 'POST' => 1], null, false, false, null]],
+        594 => [[['_route' => 'edit_credit_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::edit'], ['id'], ['PUT' => 0, 'POST' => 1], null, false, false, null]],
+        613 => [[['_route' => 'approve_credit', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::approve'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        621 => [[['_route' => 'approve_credit_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::approve'], ['id'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        642 => [[['_route' => 'reject_credit', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reject'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        650 => [[['_route' => 'reject_credit_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reject'], ['id'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        669 => [[['_route' => 'reimburse_credit', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reimburse'], ['uuid'], ['POST' => 0], null, false, false, null]],
+        677 => [[['_route' => 'reimburse_credit_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reimburse'], ['id'], ['POST' => 0], null, false, false, null]],
+        696 => [[['_route' => 'delete_credit', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::delete'], ['uuid'], ['DELETE' => 0], null, false, false, null]],
+        704 => [[['_route' => 'delete_credit_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::delete'], ['id'], ['DELETE' => 0], null, false, false, null]],
+        743 => [[['_route' => 'show_credit_request', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::show'], ['uuid'], ['GET' => 0], null, false, false, null]],
+        751 => [[['_route' => 'show_credit_request_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::show'], ['id'], ['GET' => 0], null, false, false, null]],
+        767 => [[['_route' => 'edit_credit_request', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::edit'], ['uuid'], ['PUT' => 0, 'POST' => 1], null, false, false, null]],
+        775 => [[['_route' => 'edit_credit_request_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::edit'], ['id'], ['PUT' => 0, 'POST' => 1], null, false, false, null]],
+        794 => [[['_route' => 'approve_credit_request', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::approve'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        802 => [[['_route' => 'approve_credit_request_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::approve'], ['id'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        823 => [[['_route' => 'reject_credit_request', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reject'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        831 => [[['_route' => 'reject_credit_request_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reject'], ['id'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        850 => [[['_route' => 'reimburse_credit_request', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reimburse'], ['uuid'], ['POST' => 0], null, false, false, null]],
+        858 => [[['_route' => 'reimburse_credit_request_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reimburse'], ['id'], ['POST' => 0], null, false, false, null]],
+        877 => [[['_route' => 'delete_credit_request', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::delete'], ['uuid'], ['DELETE' => 0], null, false, false, null]],
+        885 => [[['_route' => 'delete_credit_request_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::delete'], ['id'], ['DELETE' => 0], null, false, false, null]],
+        923 => [[['_route' => 'show_passenger', '_controller' => 'App\\Controller\\Business\\PassengerController::show'], ['uuid'], ['GET' => 0], null, false, false, null]],
+        935 => [[['_route' => 'edit_passenger', '_controller' => 'App\\Controller\\Business\\PassengerController::edit'], ['uuid'], ['PUT' => 0, 'POST' => 1], null, false, false, null]],
+        954 => [[['_route' => 'verify_kyc_passenger', '_controller' => 'App\\Controller\\Business\\PassengerController::verifyKyc'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        968 => [[['_route' => 'delete_passenger', '_controller' => 'App\\Controller\\Business\\PassengerController::delete'], ['uuid'], ['DELETE' => 0, 'POST' => 1], null, false, false, null]],
+        993 => [[['_route' => 'toggle_blacklist_passenger', '_controller' => 'App\\Controller\\Business\\PassengerController::toggleBlacklist'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        1024 => [[['_route' => 'edit_route_private', '_controller' => 'App\\Controller\\Business\\RouteController::edit'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        1039 => [[['_route' => 'delete_route_private', '_controller' => 'App\\Controller\\Business\\RouteController::delete'], ['uuid'], ['DELETE' => 0, 'POST' => 1], null, false, false, null]],
+        1054 => [[['_route' => 'toggle_route_private', '_controller' => 'App\\Controller\\Business\\RouteController::toggle'], ['uuid'], ['PATCH' => 0, 'POST' => 1], null, false, false, null]],
+        1088 => [[['_route' => 'edit_station_private', '_controller' => 'App\\Controller\\Business\\StationController::edit'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        1103 => [[['_route' => 'delete_station_private', '_controller' => 'App\\Controller\\Business\\StationController::delete'], ['uuid'], ['DELETE' => 0, 'POST' => 1], null, false, false, null]],
+        1118 => [[['_route' => 'toggle_station_private', '_controller' => 'App\\Controller\\Business\\StationController::toggle'], ['uuid'], ['PATCH' => 0, 'POST' => 1], null, false, false, null]],
+        1151 => [[['_route' => 'edit_tariff_private', '_controller' => 'App\\Controller\\Business\\TariffController::edit'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        1166 => [[['_route' => 'delete_tariff_private', '_controller' => 'App\\Controller\\Business\\TariffController::delete'], ['uuid'], ['DELETE' => 0, 'POST' => 1], null, false, false, null]],
+        1203 => [[['_route' => 'show_credit_pub_uuid', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::show'], ['uuid'], ['GET' => 0], null, false, false, null]],
+        1212 => [[['_route' => 'show_credit_pub_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::show'], ['id'], ['GET' => 0], null, false, false, null]],
+        1229 => [[['_route' => 'edit_credit_pub_uuid', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::edit'], ['uuid'], ['PUT' => 0, 'POST' => 1], null, false, false, null]],
+        1238 => [[['_route' => 'edit_credit_pub_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::edit'], ['id'], ['PUT' => 0, 'POST' => 1], null, false, false, null]],
+        1258 => [[['_route' => 'approve_credit_pub', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::approve'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        1267 => [[['_route' => 'approve_credit_pub_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::approve'], ['id'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        1289 => [[['_route' => 'reject_credit_pub', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reject'], ['uuid'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        1298 => [[['_route' => 'reject_credit_pub_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reject'], ['id'], ['POST' => 0, 'PUT' => 1], null, false, false, null]],
+        1318 => [[['_route' => 'reimburse_credit_pub_uuid', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reimburse'], ['uuid'], ['POST' => 0], null, false, false, null]],
+        1327 => [[['_route' => 'reimburse_credit_pub_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::reimburse'], ['id'], ['POST' => 0], null, false, false, null]],
+        1347 => [[['_route' => 'delete_credit_pub_uuid', 'uuid' => null, '_controller' => 'App\\Controller\\Business\\CreditController::delete'], ['uuid'], ['DELETE' => 0], null, false, false, null]],
+        1356 => [
             [['_route' => 'delete_credit_pub_id', 'id' => null, '_controller' => 'App\\Controller\\Business\\CreditController::delete'], ['id'], ['DELETE' => 0], null, false, false, null],
             [null, null, null, null, false, false, 0],
         ],

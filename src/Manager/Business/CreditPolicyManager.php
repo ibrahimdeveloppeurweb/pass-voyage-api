@@ -30,6 +30,9 @@ class CreditPolicyManager
         $policy->setNewUserLimit(5000);
         $policy->setStandardLimit(10000);
         $policy->setVipLimit(25000);
+        $policy->setNewUserDelay(7);
+        $policy->setStandardDelay(10);
+        $policy->setVipDelay(14);
         $policy->setAutoApproveEnabled(true);
         $policy->setAutoRejectBlacklistEnabled(true);
 
@@ -46,6 +49,9 @@ class CreditPolicyManager
             'newUserLimit' => $policy->getNewUserLimit(),
             'standardLimit' => $policy->getStandardLimit(),
             'vipLimit' => $policy->getVipLimit(),
+            'newUserDelay' => $policy->getNewUserDelay(),
+            'standardDelay' => $policy->getStandardDelay(),
+            'vipDelay' => $policy->getVipDelay(),
             'autoApproveEnabled' => $policy->getAutoApproveEnabled(),
             'autoRejectBlacklistEnabled' => $policy->getAutoRejectBlacklistEnabled(),
         ];
@@ -64,6 +70,15 @@ class CreditPolicyManager
         }
         if (isset($dataObj->vipLimit)) {
             $policy->setVipLimit((int)$dataObj->vipLimit);
+        }
+        if (isset($dataObj->newUserDelay)) {
+            $policy->setNewUserDelay((int)$dataObj->newUserDelay);
+        }
+        if (isset($dataObj->standardDelay)) {
+            $policy->setStandardDelay((int)$dataObj->standardDelay);
+        }
+        if (isset($dataObj->vipDelay)) {
+            $policy->setVipDelay((int)$dataObj->vipDelay);
         }
         if (isset($dataObj->autoApproveEnabled)) {
             $policy->setAutoApproveEnabled((bool)$dataObj->autoApproveEnabled);

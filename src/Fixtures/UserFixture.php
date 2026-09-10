@@ -79,8 +79,8 @@ class UserFixture extends Fixture
         $manager->persist($user);
 
         // ── 4. Liaison du User au Rôle ─────────────────────────────────────────
-        $role->addUser($user);
-        $manager->persist($role);
+        $user->addDroit($role);
+        $manager->persist($user);
 
         $manager->flush();
 

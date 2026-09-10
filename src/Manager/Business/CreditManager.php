@@ -22,6 +22,7 @@ class CreditManager
     private $companyRepository;
     private $qrCodeService;
     private $notificationService;
+    private $creditPolicyManager;
 
     public function __construct(
         EntityManagerInterface $em,
@@ -29,7 +30,8 @@ class CreditManager
         PassengerRepository $passengerRepository,
         CompanyRepository $companyRepository,
         QrCodeService $qrCodeService,
-        NotificationService $notificationService
+        NotificationService $notificationService,
+        \App\Manager\Business\CreditPolicyManager $creditPolicyManager
     ) {
         $this->em = $em;
         $this->creditRepository = $creditRepository;
@@ -37,6 +39,7 @@ class CreditManager
         $this->companyRepository = $companyRepository;
         $this->qrCodeService = $qrCodeService;
         $this->notificationService = $notificationService;
+        $this->creditPolicyManager = $creditPolicyManager;
     }
 
     public function create(object $data): Credit
@@ -210,6 +213,23 @@ class CreditManager
         $credit->setStatus('APPROVED');
 
         $passenger = $credit->getPassenger();
+
+        // Calculer et sauvegarder la date limite de remboursement DÈS l'approbation
+        $startDate = clone ($credit->getCreatedAt() ?? clone $credit->getTravelDate() ?? new \DateTime());
+        $policy = $this->creditPolicyManager->getOrCreatePolicy();
+        $delaiAccorde = $policy->getNewUserDelay();
+        if ($passenger) {
+            $profileType = $passenger->getProfileType();
+            if ($profileType === 'VIP') {
+                $delaiAccorde = $policy->getVipDelay();
+            } elseif ($profileType === 'STANDARD') {
+                $delaiAccorde = $policy->getStandardDelay();
+            }
+        }
+        $dueDate = clone $startDate;
+        $dueDate->modify("+{$delaiAccorde} days");
+        $credit->setRepaymentDueDate($dueDate);
+        
         if ($passenger) {
             // Lors de l'approbation, recalculer la dette globale uniquement sur les demandes de crédit VALIDÉES
             $totalDebt = 0;
@@ -223,6 +243,13 @@ class CreditManager
             }
             $passenger->setTotalDebt($totalDebt);
             $passenger->setAvailableCredit($totalDebt);
+
+            // Deduct the service fee from the wallet now that the request is approved
+            $serviceFeeUsed = (int) $credit->getServiceFee();
+            $currentWallet = (int) $passenger->getServiceFeeWallet();
+            $newWallet = max(0, $currentWallet - $serviceFeeUsed);
+            $passenger->setServiceFeeWallet($newWallet);
+
             $this->em->persist($passenger);
         }
 
@@ -259,6 +286,9 @@ class CreditManager
         if ($reason && method_exists($credit, 'setRejectionReason')) {
             $credit->setRejectionReason($reason);
         }
+
+        // Le wallet n'est PAS touché en cas de refus (il conserve le solde initial de la garantie)
+
         $this->em->persist($credit);
         $this->em->flush();
 
@@ -335,9 +365,72 @@ class CreditManager
 
         $this->em->persist($passenger);
 
-        // Mettre à jour le statut de remboursement de la demande
-        if ($newTotalDebt <= 0) {
+        // Mettre à jour le montant remboursé sur ce crédit précisément
+        $creditAmountToRepay = method_exists($credit, 'getAmountToRepay') ? $credit->getAmountToRepay() : ($credit->getAmountRequested() ?: $credit->getTotalAmount());
+        $newCreditRepaid = $credit->getRepaidAmount() + $amount;
+        $credit->setRepaidAmount($newCreditRepaid);
+
+        if ($newCreditRepaid >= $creditAmountToRepay) {
+            // CE CRÉDIT SPÉCIFIQUE EST ENTIÈREMENT REMBOURSÉ
             $credit->setRepaymentStatus('FULLY_REIMBURSED');
+
+            // Logique du Bon Payeur : Ce crédit est soldé, est-ce dans les délais ?
+            $now = new \DateTime();
+
+            $policy = $this->creditPolicyManager->getOrCreatePolicy();
+
+            // S'il y a une date d'échéance enregistrée, on l'utilise
+            if (method_exists($credit, 'getRepaymentDueDate') && $credit->getRepaymentDueDate()) {
+                $dueDate = clone $credit->getRepaymentDueDate();
+            } else {
+                $startDate = clone ($credit->getCreatedAt() ?? clone $credit->getTravelDate() ?? new \DateTime());
+                // On utilise le délai qui était applicable au moment du GRADE ACTUEL
+                $delaiAccorde = $policy->getNewUserDelay();
+                if ($passenger->getProfileType() === 'VIP') {
+                    $delaiAccorde = $policy->getVipDelay();
+                } elseif ($passenger->getProfileType() === 'STANDARD') {
+                    $delaiAccorde = $policy->getStandardDelay();
+                }
+
+                $dueDate = clone $startDate;
+                if ($dueDate instanceof \DateTime) {
+                    $dueDate->modify("+{$delaiAccorde} days");
+                }
+            }
+
+            if ($now <= $dueDate) {
+                // REMBOURSÉ À L'HEURE : +1 point
+                $c = $passenger->getConsecutiveGoodRepayments() ?? 0;
+                $passenger->setConsecutiveGoodRepayments($c + 1);
+
+                // Promotion selon le score cumulé
+                $score = $passenger->getConsecutiveGoodRepayments();
+                if ($score >= 10) {
+                    $passenger->setProfileType('VIP');
+                    $passenger->setMaxCreditLimit($policy->getVipLimit());
+                } elseif ($score >= 3) {
+                    $passenger->setProfileType('STANDARD');
+                    $passenger->setMaxCreditLimit($policy->getStandardLimit());
+                } else {
+                    $passenger->setProfileType('NEW_USER');
+                    $passenger->setMaxCreditLimit($policy->getNewUserLimit());
+                }
+            } else {
+                // EN RETARD : rétrogradation progressive (Option A)
+                $passenger->setConsecutiveGoodRepayments(0);
+                $currentProfile = $passenger->getProfileType();
+                if ($currentProfile === 'VIP') {
+                    // VIP → STANDARD (un cran en dessous)
+                    $passenger->setProfileType('STANDARD');
+                    $passenger->setMaxCreditLimit($policy->getStandardLimit());
+                } else {
+                    // STANDARD ou NEW_USER → NEW_USER
+                    $passenger->setProfileType('NEW_USER');
+                    $passenger->setMaxCreditLimit($policy->getNewUserLimit());
+                }
+            }
+            $this->em->persist($passenger);
+
         } else {
             $credit->setRepaymentStatus('PARTIALLY_REIMBURSED');
         }
@@ -551,33 +644,52 @@ class CreditManager
         try {
             $creditRequest = $this->create($data);
 
-            // Enregistrer l'opération de paiement des frais de service dans la table payment
+            // Enregistrer l'opération de paiement des frais de service dans la table payment (Ajusté avec le Wallet)
             $feeAmount = (int) $creditRequest->getServiceFee();
             if ($feeAmount <= 0) {
                 $feeAmount = (isset($data->serviceFee) && (int) $data->serviceFee > 0) ? (int) $data->serviceFee : (600 * ($creditRequest->getPassengerCount() ?: 1));
             }
 
             if ($feeAmount > 0) {
-                $paymentMethod = $data->paymentMethod ?? $data->payment_method ?? $data->method ?? 'Wave';
+                $walletAmount = (int) $passenger->getServiceFeeWallet();
+                $feeToPay = max(0, $feeAmount - $walletAmount);
 
-                $feePayment = new Payment();
-                $feePayment->setPassenger($passenger);
-                $feePayment->setCreditRequest($creditRequest);
-                $feePayment->setAmount($feeAmount);
-                $feePayment->setPaymentMethod($paymentMethod);
-                $feePayment->setTransactionId('TX-FEE-' . (new \DateTime())->format('YmdHis') . '-' . rand(1000, 9999));
-                $feePayment->setPaymentDate(new \DateTime());
-                $feePayment->setStatus('SUCCESS');
+                // TOUT PAIEMENT EN CASH RECHARGE IMMÉDIATEMENT LE WALLET
+                if ($feeToPay > 0) {
+                    $walletAmount += $feeToPay;
+                    $passenger->setServiceFeeWallet($walletAmount);
+                    $this->em->persist($passenger);
+                    $this->em->flush();
 
-                $this->em->persist($feePayment);
-                $this->em->flush();
+                    $paymentMethod = $data->paymentMethod ?? $data->payment_method ?? $data->method ?? 'Wave';
+
+                    $feePayment = new Payment();
+                    $feePayment->setPassenger($passenger);
+                    $feePayment->setCreditRequest($creditRequest);
+                    $feePayment->setAmount($feeToPay);
+                    $feePayment->setPaymentMethod($paymentMethod);
+                    $feePayment->setTransactionId('TX-FEE-' . (new \DateTime())->format('YmdHis') . '-' . rand(1000, 9999));
+                    $feePayment->setPaymentDate(new \DateTime());
+                    $feePayment->setStatus('SUCCESS');
+
+                    $this->em->persist($feePayment);
+                    $this->em->flush();
+                }
             }
 
-            $userToNotify = $user ?? $this->em->getRepository(\App\Entity\Admin\User::class)->findOneBy(['passenger' => $passenger]);
-            if ($userToNotify && $this->notificationService) {
+            if ($this->notificationService) {
                 try {
-                    $this->notificationService->createNotification(
-                        $userToNotify,
+                    if ($feeAmount > 0) {
+                        $this->notificationService->createNotificationForPassenger(
+                            $passenger,
+                            'Frais de service réglés',
+                            "Votre paiement de " . number_format($feeAmount, 0, ',', '.') . " FCFA a bien été pris en compte. (50% pour le service de réservation et 50% pour le service de crédit).",
+                            'FEE_PAID'
+                        );
+                    }
+
+                    $this->notificationService->createNotificationForPassenger(
+                        $passenger,
                         'Demande de crédit soumise',
                         "Votre demande de crédit de " . number_format($creditRequest->getAmountToRepay(), 0, ',', '.') . "F pour " . $creditRequest->getDepartureCity() . " ➔ " . $creditRequest->getArrivalCity() . " a bien été enregistrée et est en cours d'examen.",
                         'CREDIT_SUBMITTED'
@@ -691,6 +803,9 @@ class CreditManager
                         'isUsed' => $t->getIsUsed() ?? false,
                         'unitPrice' => $t->getUnitPrice() > 0 ? $t->getUnitPrice() : $unitPrice,
                         'qrCodeContent' => ($ticketStatus === 'Valide' || $ticketStatus === 'Utilisé') ? ($t->getQrCodeContent() ?: $qrDataUri) : null,
+                        'expirationDate' => (method_exists($t, 'getExpirationDate') && $t->getExpirationDate())
+                            ? $t->getExpirationDate()->format('d/m/Y')
+                            : null,
                     ];
                 }
             } else {

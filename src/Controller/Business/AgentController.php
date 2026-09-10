@@ -9,6 +9,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
+use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * @Route(path="/api/private/agent")
@@ -268,6 +269,72 @@ class AgentController extends AbstractController
         } catch (\Exception $e) {
             return $this->json(['message' => $e->getMessage()], 400);
         }
+    }
+
+    /**
+     * @Route("/ticket/send-otp", name="agent_send_otp", methods={"POST"},
+     * options={"description"="Génère un OTP pour validation", "permission"="AGENT:TICKET_SCAN"})
+     */
+    #[Route('/ticket/send-otp', name: 'agent_send_otp', methods: ['POST'], options: ['description' => 'Génère un OTP pour validation', 'permission' => 'AGENT:TICKET_SCAN'])]
+    public function sendOtp(Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        $data = json_decode($request->getContent());
+        $phone = $data->contact ?? null;
+        if (!$phone) {
+            return $this->json(['success' => false, 'message' => 'Numéro de contact manquant'], 400);
+        }
+        
+        $otp = (string) rand(1000, 9999);
+
+        // Enregistrer l'OTP avec sa durée de 2 minutes en DB.
+        $verification = new \App\Entity\Business\OtpVerification();
+        $verification->setContact($phone);
+        $verification->setCode($otp);
+        $verification->setExpiresAt(new \DateTime('+2 minutes'));
+        $verification->setIsUsed(false);
+
+        $em->persist($verification);
+        $em->flush();
+
+        return $this->json(['success' => true, 'otp' => $otp, 'message' => 'Code généré et simulé avec succès !'], 200);
+    }
+
+    /**
+     * @Route("/ticket/verify-otp", name="agent_verify_otp", methods={"POST"},
+     * options={"description"="Vérifie un OTP", "permission"="AGENT:TICKET_SCAN"})
+     */
+    #[Route('/ticket/verify-otp', name: 'agent_verify_otp', methods: ['POST'], options: ['description' => 'Vérifie un OTP', 'permission' => 'AGENT:TICKET_SCAN'])]
+    public function verifyOtp(Request $request, EntityManagerInterface $em): JsonResponse
+    {
+        $data = json_decode($request->getContent());
+        $phone = $data->contact ?? null;
+        $code = $data->otp ?? null;
+
+        if (!$phone || !$code) {
+            return $this->json(['success' => false, 'message' => 'Données incomplètes (contact ou otp).'], 400);
+        }
+
+        $repo = $em->getRepository(\App\Entity\Business\OtpVerification::class);
+        $otps = $repo->findBy(['contact' => $phone, 'isUsed' => false], ['id' => 'DESC']);
+
+        if (empty($otps)) {
+            return $this->json(['success' => false, 'message' => 'Aucun OTP valide en attente pour ce contact.'], 404);
+        }
+
+        $otpRecord = $otps[0];
+        
+        if ($otpRecord->getExpiresAt() < new \DateTime()) {
+            return $this->json(['success' => false, 'message' => 'Ce code OTP a expiré.'], 400);
+        }
+
+        if ($otpRecord->getCode() !== $code) {
+            return $this->json(['success' => false, 'message' => 'Code OTP incorrect.'], 400);
+        }
+
+        $otpRecord->setIsUsed(true);
+        $em->flush();
+
+        return $this->json(['success' => true, 'message' => 'Code vérifié avec succès.'], 200);
     }
 
     /**
